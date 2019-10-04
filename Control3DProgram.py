@@ -35,6 +35,7 @@ class GraphicsProgram3D:
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
         
         self.cube = Cube()
+        self.sphere = Sphere(24, 48)
 
         self.clock = pygame.time.Clock()
         self.clock.tick()
@@ -60,31 +61,46 @@ class GraphicsProgram3D:
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
         self.project_matrix.set_perspective(self.fov, 800.0/600.0, 0.5, 10)
         self.shader.set_projection_matrix(self.project_matrix.get_matrix())
+        self.shader.set_eye_position(self.view_matrix.eye)
+
+        # Light
+        # self.shader.set_light_position(self.view_matrix.eye)
+        # self.shader.set_light_position(Point(cos(self.angle) * 10, 5, sin(self.angle) * 10))
+        self.shader.set_light_position(Point(0, 10, 0))
+        # self.shader.set_light_diffuse(0.0, 0.0, 0.0)
+        self.shader.set_light_diffuse(1.0, 1.0, 1.0)
+        self.shader.set_light_specular(1.0, 1.0, 1.0)
+        # self.shader.set_light_specular(0.0, 0.0, 0.0)
         
+        self.shader.set_material_specular(1.0, 1.0, 1.0)
+        self.shader.set_material_shiny(10)
         self.model_matrix.load_identity()
+        # Cube drawing mode
+        self.cube.set_vertices(self.shader)
+
         # Cube 1
         self.model_matrix.push_matrix()
         self.model_matrix.add_scale(1.5)
         self.model_matrix.add_y_rotation(self.angle / 2)
         self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_solid_color(1.0, 0.0, 0.0)
+        self.shader.set_material_diffuse(1.0, 0.0, 0.0)
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
 
         # Cube 2
         self.model_matrix.push_matrix()
         new_x = cos(self.angle) * 2
-        new_y = -sin(self.angle) * 2
+        new_y = sin(self.angle) * 2
         new_z = sin(self.angle) * 2
 
         self.model_matrix.add_movement(new_x, new_y)
         self.model_matrix.add_scale(0.5)
-        self.model_matrix.add_x_rotation(15)
+        self.model_matrix.add_x_rotation(self.angle)
         self.model_matrix.add_y_rotation(self.angle)
         # self.model_matrix.add_z_rotation(self.angle)
 
         self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_solid_color(0.0, 1.0, 0.0)
+        self.shader.set_material_diffuse(0.0, 1.0, 0.0)
 
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
@@ -96,19 +112,33 @@ class GraphicsProgram3D:
         self.model_matrix.add_y_scale(2)
         self.model_matrix.add_z_scale(2)
         self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_solid_color(0.0, 0.0, 1.0)
+        self.shader.set_material_diffuse(0.0, 0.0, 1.0)
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
 
         # Cube 4
+        self.model_matrix.push_matrix()
         self.model_matrix.add_movement(y=-2)
         self.model_matrix.add_z_scale(10.0)
         self.model_matrix.add_y_scale(0.1)
         self.model_matrix.add_x_scale(10.0)
         self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_solid_color(1.0, 1.0, 0.0)
+        self.shader.set_material_diffuse(1.0, 1.0, 0.0)
         self.cube.draw(self.shader)
+        self.model_matrix.pop_matrix()
         
+        # Sphere drawing mode
+        self.sphere.set_verties(self.shader)
+
+        # Sphere
+        self.model_matrix.push_matrix()
+        self.model_matrix.add_movement(-5,2,2)
+        self.model_matrix.add_scale(1.5)
+        self.shader.set_material_diffuse(0.0, 0.66, 0.66)
+        self.shader.set_model_matrix(self.model_matrix.matrix)
+        self.sphere.draw(self.shader)
+        self.model_matrix.pop_matrix()
+
         pygame.display.flip()
 
     def handle_input(self, keys, delta_time):
