@@ -39,6 +39,9 @@ class Vector:
     def __len__(self):
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 
+    def length_squared(self):
+        return self.x * self.x + self.y * self.y + self.z * self.z
+
     def normalize(self):
         length = self.__len__()
         self.x /= length

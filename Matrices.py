@@ -35,10 +35,10 @@ class ModelMatrix:
                 counter += 1
         self.matrix = new_matrix
 
-    def add_movement(self, x=0, y=0, z=0):
-        other_matrix = [1, 0, 0, x,
-                        0, 1, 0, y,
-                        0, 0, 1, z,
+    def add_movement(self, position: Point):
+        other_matrix = [1, 0, 0, position.x,
+                        0, 1, 0, position.y,
+                        0, 0, 1, position.z,
                         0, 0, 0, 1]
         self.add_transformation(other_matrix)
 
@@ -98,9 +98,6 @@ class ModelMatrix:
                         0, 0, 0, 1]
         self.add_transformation(other_matrix)
 
-    ## MAKE OPERATIONS TO ADD TRANLATIONS, SCALES AND ROTATIONS ##
-    # ---
-
     # YOU CAN TRY TO MAKE PUSH AND POP (AND COPY) LESS DEPENDANT ON GARBAGE COLLECTION
     # THAT CAN FIX SMOOTHNESS ISSUES ON SOME COMPUTERS
     def push_matrix(self):
@@ -132,9 +129,6 @@ class ViewMatrix:
         self.u = Vector(1, 0, 0)
         self.v = Vector(0, 1, 0)
         self.n = Vector(0, 0, 1)
-
-    ## MAKE OPERATIONS TO ADD LOOK, SLIDE, PITCH, YAW and ROLL ##
-    # ---
 
     def look(self, eye, center, up):
         self.eye = eye
@@ -198,10 +192,61 @@ class ViewMatrix:
                         -ang_sin * t.y + ang_cos * self.v.y,
                         -ang_sin * t.z + ang_cos * self.v.z)
 
+class FPSViewMatrix(ViewMatrix):
+    def slide(self, del_u, del_v, del_n):
+        # self.eye += self.u * del_u + self.v * del_v + self.n * del_n
+        self.eye.x += del_u * self.u.x + del_v * self.v.x + del_n * self.n.x
+        # self.eye.y += del_u * self.u.y + del_v * self.v.y + del_n * self.n.y
+        self.eye.z += del_u * self.u.z + del_v * self.v.z + del_n * self.n.z
+    
+    def roll(self, angle):
+        pass
+        # You generally can't roll the camera in an fps
+        # Maybe implement a sort of lean mechanic?
+
+        # # Rotate around n
+        # ang_cos = cos(angle * pi / 180.0)
+        # ang_sin = sin(angle * pi / 180.0)
+        # t = Vector(self.u.x, self.u.y, self.u.z)
+        # # self.n = ang_cos * t + ang_sin * self.v
+        # # self.v = -ang_sin * t + ang_cos * self.v
+        # self.u = Vector(ang_cos * t.x + ang_sin * self.v.x,
+        #                 ang_cos * t.y + ang_sin * self.v.y,
+        #                 ang_cos * t.z + ang_sin * self.v.z)
+
+        # self.v = Vector(-ang_sin * t.x + ang_cos * self.v.x,
+        #                 -ang_sin * t.y + ang_cos * self.v.y,
+        #                 -ang_sin * t.z + ang_cos * self.v.z)
+    
+    def yaw(self, angle):
+        # Rotate around v
+        ang_cos = cos(angle * pi / 180.0)
+        ang_sin = sin(angle * pi / 180.0)
+        self.u = Vector( ang_cos * self.u.x + ang_sin * self.u.z,
+                         self.u.y,
+                        -ang_sin * self.u.x + ang_cos * self.u.z)
+        self.v = Vector( ang_cos * self.v.x + ang_sin * self.v.z,
+                         self.v.y,
+                        -ang_sin * self.v.x + ang_cos * self.v.z)
+        self.n = Vector( ang_cos * self.n.x + ang_sin * self.n.z,
+                         self.n.y,
+                        -ang_sin * self.n.x + ang_cos * self.n.z)
+
+    def pitch(self, angle):
+        # Rotate around u
+        ang_cos = cos(angle * pi / 180.0)
+        ang_sin = sin(angle * pi / 180.0)
+        t = Vector(self.n.x, self.n.y, self.n.z)
+        self.n = Vector(ang_cos * t.x + ang_sin * self.v.x,
+                        ang_cos * t.y + ang_sin * self.v.y,
+                        ang_cos * t.z + ang_sin * self.v.z)
+
+        self.v = Vector(-ang_sin * t.x + ang_cos * self.v.x,
+                        -ang_sin * t.y + ang_cos * self.v.y,
+                        -ang_sin * t.z + ang_cos * self.v.z)
 
 # The ProjectionMatrix class builds transformations concerning
 # the camera's "lens"
-
 class ProjectionMatrix:
     def __init__(self, left=-1, right=1, bottom=-1, top=1, near=-1, far=1, ortho=True):
         self.left = left
