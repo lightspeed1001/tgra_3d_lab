@@ -27,6 +27,6 @@ void main(void)
 	// vec4 v = normalize(u_eye_position - position);
 	// v_h = normalize(v_s + v);
 
-	v_position = u_projection_matrix * u_view_matrix * position;
-	gl_Position = v_position;
+	v_position = position;
+	gl_Position = u_projection_matrix * u_view_matrix * position;;
 }

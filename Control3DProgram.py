@@ -12,85 +12,90 @@ from Shaders import *
 from Matrices import *
 from maze import Maze
 from gameobject import *
+from constants import *
 
 class GraphicsProgram3D:
     def __init__(self):
-
+        """ Things that don't change between restarts """
+        # Pygame
         pygame.init()
-        pygame.display.set_mode((800, 600), pygame.OPENGL | pygame.DOUBLEBUF)
+        pygame.display.gl_set_attribute(GL_MULTISAMPLEBUFFERS, 1)
+        pygame.display.gl_set_attribute(GL_MULTISAMPLESAMPLES, 2)
+        pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
 
+        # Shader
         self.shader = Shader3D()
         self.shader.use()
 
+        # Objects
         self.model_matrix = ModelMatrix()
-        
-        self.fov = pi / 2
-        
-        self.project_matrix = ProjectionMatrix()
-        self.project_matrix.set_perspective(self.fov, 800.0/600.0, 0.5, 50)
-        self.view_matrix = FPSViewMatrix()
-        # Look dead ahead
-        self.view_matrix.look(Point(5,1,5), Point(10,1,5), Vector(0,1,0))
-        
-        self.shader.set_projection_matrix(self.project_matrix.get_matrix())
-        self.shader.set_view_matrix(self.view_matrix.get_matrix())
-        
         self.cube = Cube()
         self.sphere = Sphere(24, 48)
 
+        # Game settings
+        self.fov = DEFAULT_FOV
+        self.gravity = DEFAULT_GRAVITY
         self.clock = pygame.time.Clock()
         self.clock.tick()
-
-        self.angle = 0
-
-        self.gravity = 1
 
     def update(self):
         delta_time = self.clock.tick() / 1000.0
 
-        self.angle += pi * delta_time
         self.handle_input(pygame.key.get_pressed(), delta_time)
-        
+        self.view_matrix.eye.y -= DEFAULT_GRAVITY * delta_time
+
+        if self.player.collision_check(self.floor):
+            pass
+            #print("boop")
         # Check for collisions
         for cube in self.chunks:
-            if self.player.collision_check(cube, delta_time):
-                print("boop")
-        
+            if self.player.collision_check(cube):
+                pass
+                # print("boop")
 
-        # if angle > 2 * pi:
-        #     angle -= (2 * pi)
 
     def display(self):
+        # Draw boilerplate
         glEnable(GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
         glEnable(GL_FRAMEBUFFER_SRGB)
-        
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+        glEnable(GL_MULTISAMPLE)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
-
-        glViewport(0, 0, 800, 600)
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
         
+        # Refresh the view matrix (movement)
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
+        self.shader.set_eye_position(self.player.position)
+        # Refresh the projection matrix (FOV changes)
         # self.project_matrix.set_perspective(self.fov, 800.0/600.0, 0.5, 10)
         # self.shader.set_projection_matrix(self.project_matrix.get_matrix())
-        self.shader.set_eye_position(self.view_matrix.eye)
+        
 
-        # Light
+        # Lights
+        # Attached to player
         self.shader.set_light_position(self.view_matrix.eye)
-        # self.shader.set_light_position(Point(cos(self.angle) * 10, 5, sin(self.angle) * 10))
-        # self.shader.set_light_position(Point(0, 10, 0))
         # self.shader.set_light_diffuse(0.0, 0.0, 0.0)
-        self.shader.set_light_diffuse(1.0, 1.0, 1.0)
-        self.shader.set_light_specular(1.0, 1.0, 1.0)
+        self.shader.set_light_diffuse(CAMERA_LIGHT_DIFFUSE)
+        self.shader.set_light_specular(CAMERA_LIGHT_SPECULAR)
+        self.shader.set_light_ambience(CAMERA_LIGHT_AMBIENT)
         # self.shader.set_light_specular(0.0, 0.0, 0.0)
         
-        self.shader.set_material_specular(1.0, 1.0, 1.0)
-        self.shader.set_material_shiny(10)
+        # Some other light
+        # TODO
+
+        # Flashlight
+        # TODO
+
+        # Zero out model matrix, just in case
         self.model_matrix.load_identity()
         
         # Cube drawing mode
         self.cube.set_vertices(self.shader)
-        self.shader.set_material_diffuse(1.0, 0.0, 0.0)
+        
         # Draw the maze
+        self.shader.set_material_diffuse(COLOR_WALL)
+        self.shader.set_material_specular(SPECULAR_WALL)
+        self.shader.set_material_shiny(SHINY_WALL)
+
         for cube in self.chunks:
             self.model_matrix.push_matrix()
             
@@ -103,9 +108,9 @@ class GraphicsProgram3D:
 
         # Draw the floor
         self.model_matrix.push_matrix()
-        self.shader.set_material_diffuse(0.0, 1.0, 0.0)
-        # floor_x, floor_y, floor_z = self.floor[0]
-        # floor_x_scale, floor_y_scale, floor_z_scale = self.floor[1]
+        self.shader.set_material_diffuse(COLOR_FLOOR)
+        self.shader.set_material_shiny(SHINY_FLOOR)
+        self.shader.set_material_specular(SPECULAR_FLOOR)
         self.model_matrix.add_movement(position=self.floor.position)
         self.model_matrix.add_x_scale(self.floor.scale.x)
         self.model_matrix.add_y_scale(self.floor.scale.y)
@@ -113,67 +118,19 @@ class GraphicsProgram3D:
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
-
-        # Cube 1
-        # self.model_matrix.push_matrix()
-        # self.model_matrix.add_scale(1.5)
-        # self.model_matrix.add_y_rotation(self.angle / 2)
-        # self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_material_diffuse(1.0, 0.0, 0.0)
-        # self.cube.draw(self.shader)
-        # self.model_matrix.pop_matrix()
-
-        # # Cube 2
-        # self.model_matrix.push_matrix()
-        # new_x = cos(self.angle) * 2
-        # new_y = sin(self.angle) * 2
-        # new_z = sin(self.angle) * 2
-
-        # self.model_matrix.add_movement(new_x, new_y)
-        # self.model_matrix.add_scale(0.5)
-        # self.model_matrix.add_x_rotation(self.angle)
-        # self.model_matrix.add_y_rotation(self.angle)
-        # # self.model_matrix.add_z_rotation(self.angle)
-
-        # self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_material_diffuse(0.0, 1.0, 0.0)
-
-        # self.cube.draw(self.shader)
-        # self.model_matrix.pop_matrix()
-
-        # # Cube 3
-        # self.model_matrix.push_matrix()
-        # self.model_matrix.add_movement(9, 5, -2)
-        # self.model_matrix.add_x_scale(2)
-        # self.model_matrix.add_y_scale(2)
-        # self.model_matrix.add_z_scale(2)
-        # self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_material_diffuse(0.0, 0.0, 1.0)
-        # self.cube.draw(self.shader)
-        # self.model_matrix.pop_matrix()
-
-        # # Cube 4
-        # self.model_matrix.push_matrix()
-        # self.model_matrix.add_movement(y=-2)
-        # self.model_matrix.add_z_scale(10.0)
-        # self.model_matrix.add_y_scale(0.1)
-        # self.model_matrix.add_x_scale(10.0)
-        # self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.shader.set_material_diffuse(1.0, 1.0, 0.0)
-        # self.cube.draw(self.shader)
-        # self.model_matrix.pop_matrix()
         
-        # # Sphere drawing mode
+        # Sphere drawing mode
         # self.sphere.set_verties(self.shader)
 
-        # # Sphere
+        # Sphere
         # self.model_matrix.push_matrix()
-        # ball_x = self.view_matrix.eye.x# + self.view_matrix.n.x + 1
-        # ball_y = self.view_matrix.eye.y# - 1.5
-        # ball_z = self.view_matrix.eye.z# + self.view_matrix.n.z + 1 
-        # self.model_matrix.add_movement(ball_x, ball_y, ball_z)
-        # self.model_matrix.add_scale(0.5)
-        # self.shader.set_material_diffuse(0.0, 0.66, 0.66)
+        # ball_x = self.view_matrix.eye.x # + self.view_matrix.n.x + 1
+        # ball_y = self.view_matrix.eye.y - 4
+        # ball_z = self.view_matrix.eye.z # + self.view_matrix.n.z + 1 
+        # self.model_matrix.add_movement(Point(ball_x, ball_y, ball_z))
+        # # self.model_matrix.add_movement(Point(5,1,5))
+        # self.model_matrix.add_scale(PLAYER_RADIUS)
+        # self.shader.set_material_diffuse(COLOR_ENEMY)
         # self.shader.set_model_matrix(self.model_matrix.matrix)
         # self.sphere.draw(self.shader)
         # self.model_matrix.pop_matrix()
@@ -181,9 +138,9 @@ class GraphicsProgram3D:
         pygame.display.flip()
 
     def handle_input(self, keys, delta_time):
-        WASD_SPEED = 12.0 * delta_time
-        OTHER_SPEED = 100.0 * delta_time
-        FOV_DELTA = 0.25 * delta_time
+        WASD_SPEED = PLAYER_MOVE_SPEED * delta_time
+        OTHER_SPEED = PLAYER_TURN_SPEED * delta_time
+        FOV_DELTA = PLAYER_FOV_SPEED * delta_time
         
         if keys[K_d]:
             self.view_matrix.slide(WASD_SPEED, 0, 0)
@@ -239,26 +196,35 @@ class GraphicsProgram3D:
         pygame.quit()
 
     def start(self):
+        """ Things that could change between games """
+        # Camera
+        self.project_matrix = ProjectionMatrix()
+        self.project_matrix.set_perspective(self.fov, WINDOW_WIDTH/WINDOW_HEIGHT, DEFAULT_NEAR, DEFAULT_FAR)
+        self.view_matrix = FPSViewMatrix()
+        self.view_matrix.look(PLAYER_STARTING_POS, PLAYER_STARTING_LOOK, VECTOR_UP)
+        self.shader.set_projection_matrix(self.project_matrix.get_matrix())
+        self.shader.set_view_matrix(self.view_matrix.get_matrix())
+
         print("Generating maze...")
-        w = 27
-        h = 35
-        self.maze = Maze(w=w, h=h)
-        self.maze.generate_maze()
+        w = MAZE_WIDTH
+        h = MAZE_HEIGHT
         
-        wall_scale = 5
-        self.chunks = []
+        # Floor setup
+        wall_scale = MAZE_WALL_SIZE
         floor_size_x = wall_scale * h
         floor_size_z = wall_scale * w
-        floor_size_y = 0.5
+        floor_size_y = MAZE_FLOOR_THICK
 
         floor_pos = Point(floor_size_x / 2 - wall_scale / 2, 
-                          -wall_scale/2, 
+                          -wall_scale / 2 - floor_size_y / 2, 
                           floor_size_z / 2 - wall_scale / 2)
         floor_scale = Point(floor_size_x, floor_size_y, floor_size_z)
-
         self.floor = Wall(floor_pos, floor_scale)
-        # self.floor = ((floor_size_x / 2 - self.wall_scale / 2,-self.wall_scale/2, floor_size_z / 2 - self.wall_scale / 2), (floor_size_x, floor_size_y, floor_size_z))
-
+        
+        # Maze setup
+        self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
+        self.maze.generate_maze()
+        self.chunks = []
         for row_num, row in enumerate(self.maze.maze):
             for col_num, col in enumerate(row):
                 if col:
@@ -269,9 +235,10 @@ class GraphicsProgram3D:
 
         print("Maze generated!")
 
-        player_radius = 1
-        self.player = Player(self.view_matrix.eye, Point(player_radius, player_radius, player_radius))
+        # Player setup
+        self.player = Player(self.view_matrix.eye, Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
 
+        glClearColor(COLOR_BG[0], COLOR_BG[1], COLOR_BG[2], COLOR_BG[3])
         self.program_loop()
 
 

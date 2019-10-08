@@ -194,7 +194,6 @@ class ViewMatrix:
 
 class FPSViewMatrix(ViewMatrix):
     def slide(self, del_u, del_v, del_n):
-        # self.eye += self.u * del_u + self.v * del_v + self.n * del_n
         self.eye.x += del_u * self.u.x + del_v * self.v.x + del_n * self.n.x
         # self.eye.y += del_u * self.u.y + del_v * self.v.y + del_n * self.n.y
         self.eye.z += del_u * self.u.z + del_v * self.v.z + del_n * self.n.z
@@ -203,20 +202,6 @@ class FPSViewMatrix(ViewMatrix):
         pass
         # You generally can't roll the camera in an fps
         # Maybe implement a sort of lean mechanic?
-
-        # # Rotate around n
-        # ang_cos = cos(angle * pi / 180.0)
-        # ang_sin = sin(angle * pi / 180.0)
-        # t = Vector(self.u.x, self.u.y, self.u.z)
-        # # self.n = ang_cos * t + ang_sin * self.v
-        # # self.v = -ang_sin * t + ang_cos * self.v
-        # self.u = Vector(ang_cos * t.x + ang_sin * self.v.x,
-        #                 ang_cos * t.y + ang_sin * self.v.y,
-        #                 ang_cos * t.z + ang_sin * self.v.z)
-
-        # self.v = Vector(-ang_sin * t.x + ang_cos * self.v.x,
-        #                 -ang_sin * t.y + ang_cos * self.v.y,
-        #                 -ang_sin * t.z + ang_cos * self.v.z)
     
     def yaw(self, angle):
         # Rotate around v
@@ -233,7 +218,7 @@ class FPSViewMatrix(ViewMatrix):
                         -ang_sin * self.n.x + ang_cos * self.n.z)
 
     def pitch(self, angle):
-        # Rotate around u
+        # TODO Clamp to some max/min
         ang_cos = cos(angle * pi / 180.0)
         ang_sin = sin(angle * pi / 180.0)
         t = Vector(self.n.x, self.n.y, self.n.z)
@@ -302,48 +287,3 @@ class ProjectionMatrix:
                     0, C, D, 0,
                     0, 0, E, F,
                     0, 0, -1, 0]
-
-# IDEAS FOR OPERATIONS AND TESTING:
-# if __name__ == "__main__":
-#     matrix = ModelMatrix()
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_translation(3, 1, 2)
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_scale(2, 3, 4)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-
-#     matrix.add_translation(5, 5, 5)
-#     matrix.push_matrix()
-#     print(matrix)
-#     matrix.add_scale(3, 2, 3)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-
-#     matrix.pop_matrix()
-#     print(matrix)
-
-#     matrix.push_matrix()
-#     matrix.add_scale(2, 2, 2)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_translation(3, 3, 3)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_rotation_y(pi / 3)
-#     print(matrix)
-#     matrix.push_matrix()
-#     matrix.add_translation(1, 1, 1)
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
-#     matrix.pop_matrix()
-#     print(matrix)
