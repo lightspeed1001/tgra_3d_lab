@@ -16,9 +16,6 @@ class GameObject:
         self.min_z = self.position.z - self.scale.z / 2
 
     def intersects(self, other):
-        # (a.minX <= b.maxX && a.maxX >= b.minX) &&
-        # (a.minY <= b.maxY && a.maxY >= b.minY) &&
-        # (a.minZ <= b.maxZ && a.maxZ >= b.minZ);
         return (self.min_x <= other.max_x and self.max_x >= other.min_x) and \
                (self.min_y <= other.max_y and self.max_y >= other.min_y) and \
                (self.min_z <= other.max_z and self.max_z >= other.min_z)
@@ -48,17 +45,37 @@ class Player(GameObject):
 
         if self.intersects(other):
             # Bounding boxes do collide. Time to eject the player properly.
+            w = other.position.x - self.position.x
+            h = other.position.z - self.position.z
 
-            if(self.max_z > other.min_z):
-                # print("this one?")
-                self.position.z = other.max_z + self.scale.z / 2
-                return True
-
-            # This guy never gets called :(
-            if(self.min_z > other.max_z):
-                print("other one?")
+            if( w >= abs(h)): 
+                self.position.x = other.min_x - self.scale.x / 2
+            if(-w >= abs(h)): 
+                self.position.x = other.max_x + self.scale.x / 2
+            if( h >= abs(w)): 
                 self.position.z = other.min_z - self.scale.z / 2
-                return True
+            if(-h >= abs(w)): 
+                self.position.z = other.max_z + self.scale.z / 2
+            # var w = wall.Center.X - player.Center.X;
+            # var h = wall.Center.Y - player.Center.Y;
+
+            # if (w >= Math.Abs(h)) player.Center = new Point(wall.MinX - player.Size.Width / 2, player.Center.Y);
+            # if (-w >= Math.Abs(h)) player.Center = new Point(wall.MaxX + player.Size.Width / 2, player.Center.Y);
+            # if (h >= Math.Abs(w)) player.Center = new Point(player.Center.X, wall.MinY - player.Size.Height / 2);
+            # if (-h >= Math.Abs(w)) player.Center = new Point(player.Center.X, wall.MaxY + player.Size.Height / 2);
+
+
+            # if(self.max_z > other.min_z):
+            #     # print("this one?")
+            #     self.position.z = other.max_z + self.scale.z / 2
+            #     return True
+
+            # # This guy never gets called :(
+            # if(self.min_z > other.max_z):
+            #     print("other one?")
+            #     self.position.z = other.min_z - self.scale.z / 2
+            #     return True
+
             # if( self.position.z > other.position.z and
             #     self.position.x > other.min_z and
             #     self.position.x < other.max_x):
