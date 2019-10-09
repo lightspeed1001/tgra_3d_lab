@@ -81,7 +81,7 @@ class GraphicsProgram3D:
         # Flashlight
         self.shader.set_flashlight_position(self.view_matrix.eye)
         eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
-        self.shader.set_flashlight_direction(eye_back)
+        self.shader.set_flashlight_direction(self.view_matrix.n)
 
         # Zero out model matrix, just in case
         self.model_matrix.load_identity()

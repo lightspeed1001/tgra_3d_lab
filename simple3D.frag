@@ -56,7 +56,7 @@ vec4 calculate_player_light()
 
 	float distance    = length(u_light_position - v_position);
 	float attenuation = 1.0 / (u_light_constant + u_light_linear * distance + 
-    		    u_light_quadratic * (distance * distance));  
+    		    			   u_light_quadratic * (distance * distance));  
 	u_light_color *= attenuation;
 	return u_light_color * u_mat_diffuse * lambert
 			     + u_light_color * u_mat_specular * pow(phong, u_mat_shiny)
@@ -65,15 +65,25 @@ vec4 calculate_player_light()
 
 vec4 calculate_player_flashlight()
 {
+	// https://learnopengl.com/Lighting/Light-casters
 	// fragpos = v_position
 	// lightdir = vector from fragpos to light pos
-	vec4 light_dir = u_player_flashlight_position - v_position;
-	float theta = dot(light_dir, normalize(-u_player_flashlight_direction));
+	vec4 light_dir = normalize(u_player_flashlight_position - v_position);
+	float theta = dot(light_dir, normalize(u_player_flashlight_direction));
 		
 	if(theta > u_player_flashlight_theta) 
-	{       
+	{	
+		vec4 v = normalize(u_eye_position - v_position);
+		vec4 vh = normalize(light_dir + v);
+
+		float lambert = max(dot(v_normal, light_dir), 0.0);
+		float phong = max(dot(v_normal, vh), 0.0);
+
+		return u_player_flashlight_color * u_mat_diffuse * lambert
+			+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
+			+ (u_player_flashlight_color * 0.01);
 		// do lighting calculations
-		return u_player_flashlight_color * 0.3;
+		// return u_player_flashlight_color * 0.6;
 	}
 	else  // else, use ambient light so scene isn't completely dark outside the spotlight.
 		return u_player_flashlight_color * 0.01;
@@ -82,7 +92,7 @@ vec4 calculate_player_flashlight()
 void main(void)
 {   
 	gl_FragColor = calculate_directional_light();
-	gl_FragColor += calculate_player_light();
+	// gl_FragColor += calculate_player_light();
 	gl_FragColor += calculate_player_flashlight();
 	// gl_FragColor = vec4(0.1, 0.0, 0.0, 1.0);
 }
