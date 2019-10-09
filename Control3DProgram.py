@@ -42,18 +42,18 @@ class GraphicsProgram3D:
         delta_time = self.clock.tick() / 1000.0
 
         self.handle_input(pygame.key.get_pressed(), delta_time)
-        self.view_matrix.eye.y -= DEFAULT_GRAVITY * delta_time
+        # self.view_matrix.eye.y -= DEFAULT_GRAVITY * delta_time
 
         if self.player.collision_check(self.floor):
             pass
-            #print("boop")
+
         if self.goal.collision_check(self.player):
-            print("YOU ARE A WINNER")
+            self.new_game()
+
         # Check for collisions
         for cube in self.chunks:
             if self.player.collision_check(cube):
                 pass
-                # print("boop")
 
 
     def display(self):
@@ -75,12 +75,9 @@ class GraphicsProgram3D:
         # Attached to player
         self.shader.set_light_position(self.view_matrix.eye)
         
-        # Some other light
-        # Global directional light already set and doesn't change
-
         # Flashlight
         self.shader.set_flashlight_position(self.view_matrix.eye)
-        eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
+        # eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
         self.shader.set_flashlight_direction(self.view_matrix.n)
 
         # Zero out model matrix, just in case
@@ -93,7 +90,7 @@ class GraphicsProgram3D:
         self.shader.set_material_diffuse(COLOR_WALL)
         self.shader.set_material_specular(SPECULAR_WALL)
         self.shader.set_material_shiny(SHINY_WALL)
-
+        self.shader.set_material_emit(EMIT_WALL)
         for cube in self.chunks:
             self.model_matrix.push_matrix()
             
@@ -109,6 +106,7 @@ class GraphicsProgram3D:
         self.shader.set_material_diffuse(COLOR_FLOOR)
         self.shader.set_material_shiny(SHINY_FLOOR)
         self.shader.set_material_specular(SPECULAR_FLOOR)
+        self.shader.set_material_emit(EMIT_WALL)
         self.model_matrix.add_movement(position=self.floor.position)
         self.model_matrix.add_x_scale(self.floor.scale.x)
         self.model_matrix.add_y_scale(self.floor.scale.y)
@@ -119,13 +117,14 @@ class GraphicsProgram3D:
         
         # Draw the goal?
         # Alpha test for fun
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        # glEnable(GL_BLEND)
+        # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.model_matrix.push_matrix()
 
-        self.shader.set_material_diffuse(COLOR_FLOOR)
-        self.shader.set_material_specular(SPECULAR_WALL)
+        self.shader.set_material_diffuse(COLOR_GOAL)
+        self.shader.set_material_specular(SPECULAR_GOAL)
         self.shader.set_material_shiny(SHINY_GOAL)
+        self.shader.set_material_emit(EMIT_GOAL)
         
         self.model_matrix.add_movement(position = self.goal.position)
         self.model_matrix.add_scale(self.goal.scale.x) # The walls are perfect cubes
@@ -133,7 +132,7 @@ class GraphicsProgram3D:
         self.cube.draw(self.shader)
         
         self.model_matrix.pop_matrix()
-        glDisable(GL_BLEND)
+        # glDisable(GL_BLEND)
 
         # Sphere drawing mode
         # self.sphere.set_verties(self.shader)
@@ -213,17 +212,18 @@ class GraphicsProgram3D:
         # OUT OF GAME LOOP
         pygame.quit()
 
-    def start(self):
-        """ Things that could change between games """
-        # Camera
+    def setup_camera(self):
         self.project_matrix = ProjectionMatrix()
         self.project_matrix.set_perspective(self.fov, WINDOW_WIDTH/WINDOW_HEIGHT, DEFAULT_NEAR, DEFAULT_FAR)
         self.view_matrix = FPSViewMatrix()
-        self.view_matrix.look(PLAYER_STARTING_POS, PLAYER_STARTING_LOOK, VECTOR_UP)
+        eye_start = Point(PLAYER_STARTING_POS.x, PLAYER_STARTING_POS.y, PLAYER_STARTING_POS.z)
+        eye_look = Point(PLAYER_STARTING_LOOK.x, PLAYER_STARTING_LOOK.y, PLAYER_STARTING_LOOK.z)
+        self.view_matrix.look(eye_start, eye_look, VECTOR_UP)
         self.shader.set_projection_matrix(self.project_matrix.get_matrix())
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
         
-        # Lights
+
+    def setup_lights(self):
         # Global directional light
         self.shader.set_global_light_direction(GLOBAL_LIGHT_DIRECTION)
         self.shader.set_global_light_color(GLOBAL_LIGHT_COLOR)
@@ -235,12 +235,13 @@ class GraphicsProgram3D:
         # Flashlight
         self.shader.set_flashlight_direction(self.view_matrix.n)
         self.shader.set_flashlight_color(PLAYER_FLASHLIGHT_COLOR)
-        self.shader.set_flashlight_theta(PLAYER_FLASHLIGHT_THETA)
+        self.shader.set_flashlight_cutoff(PLAYER_FLASHLIGHT_CUTOFF)
+        self.shader.set_flashlight_outer_cutoff(PLAYER_FLASHLIGHT_OUTER_CUTOFF)
         self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
         self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
         self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
 
-        print("Generating maze...")
+    def setup_maze(self):
         w = MAZE_WIDTH
         h = MAZE_HEIGHT
         
@@ -273,11 +274,18 @@ class GraphicsProgram3D:
         goal_y = 0
         goal_z = (h-2) * wall_scale
         self.goal = Trigger(Point(goal_x, goal_y, goal_z), wall_scale_p)
-        print("Maze generated!")
 
-        # Player setup
+    def setup_player(self):
         self.player = Player(self.view_matrix.eye, Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
 
+    def new_game(self):
+        self.setup_camera()
+        self.setup_lights()
+        self.setup_maze()
+        self.setup_player()
+
+    def start(self):
+        self.new_game()
         glClearColor(COLOR_BG[0], COLOR_BG[1], COLOR_BG[2], COLOR_BG[3])
         self.program_loop()
 

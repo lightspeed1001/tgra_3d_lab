@@ -53,15 +53,17 @@ class Shader3D:
         self.flashlightPosition     = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_position")
         self.flashlightDirection    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_direction")
         self.flashlightDiffuseLoc   = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_color")
-        self.flashlightCuttofLoc    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_theta")
+        self.flashlightCutoff       = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_cutoff")
         self.flashlightAttConstant  = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_constant")
         self.flashlightAttLinear    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_linear")
         self.flashlightAttQuadratic = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_quad")
+        self.flashlightOuterCutoff  = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_outer_cutoff")
 
         # Material
         self.materialDiffuseLoc  = glGetUniformLocation(self.renderingProgramID, "u_mat_diffuse")
         self.materialSpecularLoc = glGetUniformLocation(self.renderingProgramID, "u_mat_specular")
         self.materialShinyLoc    = glGetUniformLocation(self.renderingProgramID, "u_mat_shiny")
+        self.materialEmit        = glGetUniformLocation(self.renderingProgramID, "u_mat_emit")
 
         # Matrices
         self.modelMatrixLoc      = glGetUniformLocation(self.renderingProgramID, "u_model_matrix")
@@ -127,11 +129,14 @@ class Shader3D:
     def set_flashlight_color(self, rgb, a=1.0):
         glUniform4f(self.flashlightDiffuseLoc, rgb[0], rgb[1], rgb[2], a)
 
-    def set_flashlight_theta(self, f):
-        glUniform1f(self.lightAttConstant, f)
+    def set_flashlight_cutoff(self, f):
+        glUniform1f(self.flashlightCutoff, f)
+
+    def set_flashlight_outer_cutoff(self, f):
+        glUniform1f(self.flashlightOuterCutoff, f)
 
     def set_flashlight_attenuation_constant(self, f):
-        glUniform1f(self.lightAttConstant, f)
+        glUniform1f(self.flashlightAttConstant, f)
 
     def set_flashlight_attenuation_linear(self, f):
         glUniform1f(self.flashlightAttLinear, f)
@@ -148,3 +153,6 @@ class Shader3D:
 
     def set_material_shiny(self, s):
         glUniform1f(self.materialShinyLoc, s)
+
+    def set_material_emit(self, e):
+        glUniform1f(self.materialEmit, e)

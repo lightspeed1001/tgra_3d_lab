@@ -21,7 +21,8 @@ uniform vec4 u_global_light_color;
 uniform vec4 u_player_flashlight_position;
 uniform vec4 u_player_flashlight_direction; // Should be view_matrix.n?
 uniform vec4 u_player_flashlight_color;
-uniform float u_player_flashlight_theta;
+uniform float u_player_flashlight_cutoff;
+uniform float u_player_flashlight_outer_cutoff;
 uniform float u_player_flashlight_constant;
 uniform float u_player_flashlight_linear;
 uniform float u_player_flashlight_quad;
@@ -29,6 +30,7 @@ uniform float u_player_flashlight_quad;
 uniform vec4 u_mat_diffuse;
 uniform vec4 u_mat_specular;
 uniform float u_mat_shiny;
+uniform float u_mat_emit;
 
 vec4 calculate_directional_light()
 {
@@ -69,21 +71,23 @@ vec4 calculate_player_flashlight()
 	// fragpos = v_position
 	// lightdir = vector from fragpos to light pos
 	vec4 light_dir = normalize(u_player_flashlight_position - v_position);
-	float theta = dot(light_dir, normalize(u_player_flashlight_direction));
+	float theta = dot(light_dir, normalize(-u_player_flashlight_direction));
 		
-	if(theta > u_player_flashlight_theta) 
+	if(theta > u_player_flashlight_cutoff) 
 	{	
-		vec4 v = normalize(u_eye_position - v_position);
-		vec4 vh = normalize(light_dir + v);
+		// float epsilon = u_player_flashlight_cutoff - u_player_flashlight_outer_cutoff;
+		// float intensity = clamp((theta - u_player_flashlight_outer_cutoff) / epsilon, 0.0, 1.0);
+		// vec4 v = normalize(u_eye_position - v_position);
+		// vec4 vh = normalize(light_dir + v);
 
-		float lambert = max(dot(v_normal, light_dir), 0.0);
-		float phong = max(dot(v_normal, vh), 0.0);
-
-		return u_player_flashlight_color * u_mat_diffuse * lambert
-			+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
-			+ (u_player_flashlight_color * 0.01);
+		// float lambert = max(dot(v_normal, light_dir), 0.0);
+		// float phong = max(dot(v_normal, vh), 0.0);
+		// u_player_flashlight_color *= intensity;
+		// return u_player_flashlight_color * u_mat_diffuse * lambert
+		// 	+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
+		// 	+ (u_player_flashlight_color * 0.01);
 		// do lighting calculations
-		// return u_player_flashlight_color * 0.6;
+		return u_player_flashlight_color * 0.9;
 	}
 	else  // else, use ambient light so scene isn't completely dark outside the spotlight.
 		return u_player_flashlight_color * 0.01;
@@ -92,7 +96,10 @@ vec4 calculate_player_flashlight()
 void main(void)
 {   
 	gl_FragColor = calculate_directional_light();
-	// gl_FragColor += calculate_player_light();
-	gl_FragColor += calculate_player_flashlight();
+	gl_FragColor += calculate_player_light();
+	gl_FragColor += u_mat_diffuse * u_mat_emit; 
+	// gl_FragColor += calculate_player_flashlight();
 	// gl_FragColor = vec4(0.1, 0.0, 0.0, 1.0);
+	// gl_FragColor *= 0.01;
+	// gl_FragColor += vec4(abs(v_normal.xyz), 1.0);
 }
