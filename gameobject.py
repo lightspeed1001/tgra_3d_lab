@@ -91,4 +91,5 @@ class Wall(GameObject):
     pass
 
 class Trigger(GameObject):
-    pass
+    def collision_check(self, other):
+        return self.intersects(other)

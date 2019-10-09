@@ -47,6 +47,8 @@ class GraphicsProgram3D:
         if self.player.collision_check(self.floor):
             pass
             #print("boop")
+        if self.goal.collision_check(self.player):
+            print("YOU ARE A WINNER")
         # Check for collisions
         for cube in self.chunks:
             if self.player.collision_check(cube):
@@ -61,7 +63,6 @@ class GraphicsProgram3D:
         glEnable(GL_MULTISAMPLE)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
-        
         # Refresh the view matrix (movement)
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
         self.shader.set_eye_position(self.player.position)
@@ -73,11 +74,6 @@ class GraphicsProgram3D:
         # Lights
         # Attached to player
         self.shader.set_light_position(self.view_matrix.eye)
-        # self.shader.set_light_diffuse(0.0, 0.0, 0.0)
-        self.shader.set_light_diffuse(CAMERA_LIGHT_DIFFUSE)
-        self.shader.set_light_specular(CAMERA_LIGHT_SPECULAR)
-        self.shader.set_light_ambience(CAMERA_LIGHT_AMBIENT)
-        # self.shader.set_light_specular(0.0, 0.0, 0.0)
         
         # Some other light
         # TODO
@@ -119,6 +115,24 @@ class GraphicsProgram3D:
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
         
+        # Draw the goal?
+        # Alpha test for fun
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        self.model_matrix.push_matrix()
+
+        self.shader.set_material_diffuse(COLOR_FLOOR)
+        self.shader.set_material_specular(SPECULAR_WALL)
+        self.shader.set_material_shiny(SHINY_GOAL)
+        
+        self.model_matrix.add_movement(position = self.goal.position)
+        self.model_matrix.add_scale(self.goal.scale.x) # The walls are perfect cubes
+        self.shader.set_model_matrix(self.model_matrix.matrix)
+        self.cube.draw(self.shader)
+        
+        self.model_matrix.pop_matrix()
+        glDisable(GL_BLEND)
+
         # Sphere drawing mode
         # self.sphere.set_verties(self.shader)
 
@@ -204,6 +218,17 @@ class GraphicsProgram3D:
         self.view_matrix.look(PLAYER_STARTING_POS, PLAYER_STARTING_LOOK, VECTOR_UP)
         self.shader.set_projection_matrix(self.project_matrix.get_matrix())
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
+        
+        # Lights
+        # Global directional light
+        self.shader.set_global_light_direction(GLOBAL_LIGHT_DIRECTION)
+        self.shader.set_global_light_color(GLOBAL_LIGHT_COLOR)
+        # Player lantern
+        self.shader.set_light_diffuse(PLAYER_LIGHT_COLOR)
+        self.shader.set_light_attenuation_constant(PLAYER_LIGHT_ATT_CONSTANT)
+        self.shader.set_light_attenuation_linear(PLAYER_LIGHT_ATT_LINEAR)
+        self.shader.set_light_attenuation_quad(PLAYER_LIGHT_ATT_QUAD)
+
 
         print("Generating maze...")
         w = MAZE_WIDTH
@@ -225,14 +250,19 @@ class GraphicsProgram3D:
         self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
         self.maze.generate_maze()
         self.chunks = []
+        wall_scale_p = Point(wall_scale, wall_scale, wall_scale)
         for row_num, row in enumerate(self.maze.maze):
             for col_num, col in enumerate(row):
                 if col:
                     x = row_num * wall_scale
                     y = 0
                     z = col_num * wall_scale
-                    self.chunks.append(Wall(Point(x, y, z), Point(wall_scale, wall_scale, wall_scale)))
+                    self.chunks.append(Wall(Point(x, y, z), wall_scale_p))
 
+        goal_x = (w-2) * wall_scale
+        goal_y = 0
+        goal_z = (h-2) * wall_scale
+        self.goal = Trigger(Point(goal_x, goal_y, goal_z), wall_scale_p)
         print("Maze generated!")
 
         # Player setup

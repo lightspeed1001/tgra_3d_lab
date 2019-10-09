@@ -38,10 +38,15 @@ class Shader3D:
         self.eyePosLoc = glGetUniformLocation(self.renderingProgramID, "u_eye_position")
         # self.colorLoc = glGetUniformLocation(self.renderingProgramID, "u_color")
         self.lightPosLoc         = glGetUniformLocation(self.renderingProgramID, "u_light_position")
-        self.lightDiffuseLoc     = glGetUniformLocation(self.renderingProgramID, "u_light_diffuse")
-        self.lightSpecularLoc    = glGetUniformLocation(self.renderingProgramID, "u_light_specular")
-        self.lightAmbienceLoc = glGetUniformLocation(self.renderingProgramID, "u_light_ambience")
+        self.lightDiffuseLoc     = glGetUniformLocation(self.renderingProgramID, "u_light_color")
+        self.lightAttConstant = glGetUniformLocation(self.renderingProgramID, "u_light_constant")
+        self.lightAttLinear = glGetUniformLocation(self.renderingProgramID, "u_light_linear")
+        self.lightAttQuadratic = glGetUniformLocation(self.renderingProgramID, "u_light_quadratic")
+
+        self.globalLightDirection = glGetUniformLocation(self.renderingProgramID, "u_global_light_direction")
+        self.globalLightColor     = glGetUniformLocation(self.renderingProgramID, "u_global_light_color")
         
+
         self.materialDiffuseLoc  = glGetUniformLocation(self.renderingProgramID, "u_mat_diffuse")
         self.materialSpecularLoc = glGetUniformLocation(self.renderingProgramID, "u_mat_specular")
         self.materialShinyLoc = glGetUniformLocation(self.renderingProgramID, "u_mat_shiny")
@@ -76,9 +81,6 @@ class Shader3D:
     def set_normal_attribute(self, vertex_array):
         glVertexAttribPointer(self.normalLoc, 3, GL_FLOAT, False, 0, vertex_array)
 
-    # def set_solid_color(self, r, g, b):
-    #     glUniform4f(self.colorLoc, r, g, b, 1.0)
-
     def set_eye_position(self, pos):
         glUniform4f(self.eyePosLoc, pos.x, pos.y, pos.z, 1.0)
 
@@ -87,15 +89,24 @@ class Shader3D:
 
     def set_light_diffuse(self, rgb):
         glUniform4f(self.lightDiffuseLoc, rgb[0], rgb[1], rgb[2], 1.0)
+    
+    def set_light_attenuation_constant(self, f):
+        glUniform1f(self.lightAttConstant, f)
 
-    def set_light_specular(self, rgb):
-        glUniform4f(self.lightSpecularLoc, rgb[0], rgb[1], rgb[2], 1.0)
+    def set_light_attenuation_linear(self, f):
+        glUniform1f(self.lightAttLinear, f)
 
-    def set_light_ambience(self, rgb):
-        glUniform4f(self.lightAmbienceLoc, rgb[0], rgb[1], rgb[2], 1.0)
+    def set_light_attenuation_quad(self, f):
+        glUniform1f(self.lightAttQuadratic, f)
 
-    def set_material_diffuse(self, rgb):
-        glUniform4f(self.materialDiffuseLoc, rgb[0], rgb[1], rgb[2], 1.0)
+    def set_global_light_direction(self, pos):
+        glUniform4f(self.globalLightDirection, pos.x, pos.y, pos.z, 1.0)
+
+    def set_global_light_color(self, rgb):
+        glUniform4f(self.globalLightColor, rgb[0], rgb[1], rgb[2], 1.0)
+
+    def set_material_diffuse(self, rgb, a=1.0):
+        glUniform4f(self.materialDiffuseLoc, rgb[0], rgb[1], rgb[2], a)
 
     def set_material_specular(self, rgb):
         glUniform4f(self.materialSpecularLoc, rgb[0], rgb[1], rgb[2], 1.0)
