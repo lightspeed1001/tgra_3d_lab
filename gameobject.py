@@ -58,7 +58,7 @@ class Player(GameObject):
             if(-h >= abs(w)):
                 self.position.z = other.max_z + self.scale.z / 2
                 return
-            print("min_x: {}; max_x: {}; min_y: {}; max_y: {}; min_z: {}; max_xz {};".format(self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z))
+            # print("min_x: {}; max_x: {}; min_y: {}; max_y: {}; min_z: {}; max_xz {};".format(self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z))
 
             # if( self.position.z > other.position.z and
             #     self.position.x > other.min_z and

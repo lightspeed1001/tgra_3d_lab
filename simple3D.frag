@@ -1,6 +1,6 @@
 varying vec4 v_normal;
-varying vec4 v_s;
-varying vec4 v_h;
+// varying vec4 v_s;
+// varying vec4 v_h;
 
 varying vec4 v_position;
 uniform vec4 u_eye_position;
@@ -17,7 +17,14 @@ uniform vec4 u_global_light_direction;
 uniform vec4 u_global_light_color;
 
 // Flashlight
-uniform vec4 u_player_f;
+// Position is eye position, facing forward
+uniform vec4 u_player_flashlight_position;
+uniform vec4 u_player_flashlight_direction; // Should be view_matrix.n?
+uniform vec4 u_player_flashlight_color;
+uniform float u_player_flashlight_theta;
+uniform float u_player_flashlight_constant;
+uniform float u_player_flashlight_linear;
+uniform float u_player_flashlight_quad;
 
 uniform vec4 u_mat_diffuse;
 uniform vec4 u_mat_specular;
@@ -39,10 +46,10 @@ vec4 calculate_directional_light()
 
 vec4 calculate_player_light()
 {
-	v_s = normalize(u_light_position - v_position);
+	vec4 v_s = normalize(u_light_position - v_position);
 
 	vec4 v = normalize(u_eye_position - v_position);
-	v_h = normalize(v_s + v);
+	vec4 v_h = normalize(v_s + v);
 
 	float lambert = max(dot(v_normal, v_s), 0.0);
 	float phong = max(dot(v_normal, v_h), 0.0);
@@ -56,8 +63,26 @@ vec4 calculate_player_light()
 				 + u_light_color * 0.01;
 }
 
+vec4 calculate_player_flashlight()
+{
+	// fragpos = v_position
+	// lightdir = vector from fragpos to light pos
+	vec4 light_dir = u_player_flashlight_position - v_position;
+	float theta = dot(light_dir, normalize(-u_player_flashlight_direction));
+		
+	if(theta > u_player_flashlight_theta) 
+	{       
+		// do lighting calculations
+		return u_player_flashlight_color * 0.3;
+	}
+	else  // else, use ambient light so scene isn't completely dark outside the spotlight.
+		return u_player_flashlight_color * 0.01;
+}
+
 void main(void)
 {   
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
+	gl_FragColor += calculate_player_flashlight();
+	// gl_FragColor = vec4(0.1, 0.0, 0.0, 1.0);
 }

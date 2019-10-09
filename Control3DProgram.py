@@ -76,10 +76,12 @@ class GraphicsProgram3D:
         self.shader.set_light_position(self.view_matrix.eye)
         
         # Some other light
-        # TODO
+        # Global directional light already set and doesn't change
 
         # Flashlight
-        # TODO
+        self.shader.set_flashlight_position(self.view_matrix.eye)
+        eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
+        self.shader.set_flashlight_direction(eye_back)
 
         # Zero out model matrix, just in case
         self.model_matrix.load_identity()
@@ -168,8 +170,10 @@ class GraphicsProgram3D:
 
         if keys[K_LEFT]:
             self.view_matrix.yaw(OTHER_SPEED)
+            # print(self.view_matrix.n)
         if keys[K_RIGHT]:
             self.view_matrix.yaw(-OTHER_SPEED)
+            # print(self.view_matrix.n)
 
         # if keys[K_e]:
         #     self.view_matrix.roll(-OTHER_SPEED)
@@ -190,7 +194,7 @@ class GraphicsProgram3D:
             self.fov += FOV_DELTA
         if keys[K_t]:
             self.fov -= FOV_DELTA
-    
+
     def program_loop(self):
         exiting = False
         while not exiting:
@@ -228,7 +232,13 @@ class GraphicsProgram3D:
         self.shader.set_light_attenuation_constant(PLAYER_LIGHT_ATT_CONSTANT)
         self.shader.set_light_attenuation_linear(PLAYER_LIGHT_ATT_LINEAR)
         self.shader.set_light_attenuation_quad(PLAYER_LIGHT_ATT_QUAD)
-
+        # Flashlight
+        self.shader.set_flashlight_direction(self.view_matrix.n)
+        self.shader.set_flashlight_color(PLAYER_FLASHLIGHT_COLOR)
+        self.shader.set_flashlight_theta(PLAYER_FLASHLIGHT_THETA)
+        self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
+        self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
+        self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
 
         print("Generating maze...")
         w = MAZE_WIDTH
@@ -250,7 +260,7 @@ class GraphicsProgram3D:
         self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
         self.maze.generate_maze()
         self.chunks = []
-        wall_scale_p = Point(wall_scale, wall_scale, wall_scale)
+        wall_scale_p = Point(wall_scale*1.05, wall_scale*1.05, wall_scale*1.05)
         for row_num, row in enumerate(self.maze.maze):
             for col_num, col in enumerate(row):
                 if col:
