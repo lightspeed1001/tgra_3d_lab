@@ -1,11 +1,8 @@
 varying vec4 v_normal;
-// varying vec4 v_s;
-// varying vec4 v_h;
-
 varying vec4 v_position;
 uniform vec4 u_eye_position;
 
-// idk random light that follows player
+// Lanter light around the player
 uniform vec4 u_light_position;
 uniform vec4 u_light_color;
 uniform float u_light_constant;
@@ -17,30 +14,44 @@ uniform vec4 u_global_light_direction;
 uniform vec4 u_global_light_color;
 
 // Flashlight
-// Position is eye position, facing forward
 uniform vec4 u_player_flashlight_position;
-uniform vec4 u_player_flashlight_direction; // Should be view_matrix.n?
+uniform vec4 u_player_flashlight_direction;
 uniform vec4 u_player_flashlight_color;
 uniform float u_player_flashlight_cutoff;
 uniform float u_player_flashlight_outer_cutoff;
-uniform float u_player_flashlight_constant;
-uniform float u_player_flashlight_linear;
-uniform float u_player_flashlight_quad;
+// uniform float u_player_flashlight_constant;
+// uniform float u_player_flashlight_linear;
+// uniform float u_player_flashlight_quad;
 
+// Material
 uniform vec4 u_mat_diffuse;
 uniform vec4 u_mat_specular;
 uniform float u_mat_shiny;
 uniform float u_mat_emit;
 
+// "fog"
+uniform float u_fog;
+uniform vec4 u_fog_color;
+
 vec4 calculate_directional_light()
 {
+	// Start by checking in what direction the light is facing.
+    // For some weird reason, the "standard" thing to do is
+    // to face the light away from the scene, 
+    // and then reverse it in the shader.
 	vec4 light_dir = normalize(-u_global_light_direction);
+    // Get the vector from the camera to the fragment
 	vec4 v = normalize(u_eye_position - v_position);
+    // Get the vector from the light to the other one
+    // It's used to calculate the specularity
 	vec4 vh = normalize(light_dir + v);
 
+    // Calculate the true color of the material
 	float lambert = max(dot(v_normal, light_dir), 0.0);
+    // Calculate the specularity/shininess
 	float phong = max(dot(v_normal, vh), 0.0);
 
+    // Combine the values, along with a little bit of ambience
 	return u_global_light_color * u_mat_diffuse * lambert
 			+ u_global_light_color * u_mat_specular * pow(phong, u_mat_shiny)
 			+ (u_global_light_color * 0.01);
@@ -48,17 +59,22 @@ vec4 calculate_directional_light()
 
 vec4 calculate_player_light()
 {
-	vec4 v_s = normalize(u_light_position - v_position);
+	// https://learnopengl.com/Lighting/Light-casters
+	// This function is identical to the other one, with one added thing.
+	vec4 light_dir = normalize(u_light_position - v_position);
 
 	vec4 v = normalize(u_eye_position - v_position);
-	vec4 v_h = normalize(v_s + v);
+	vec4 v_h = normalize(light_dir + v);
 
-	float lambert = max(dot(v_normal, v_s), 0.0);
+	float lambert = max(dot(v_normal, light_dir), 0.0);
 	float phong = max(dot(v_normal, v_h), 0.0);
-
+	// We want to limit the range of the light, so we need to reduce
+	// the strenght of the light as the fragments get further away.
 	float distance    = length(u_light_position - v_position);
 	float attenuation = 1.0 / (u_light_constant + u_light_linear * distance + 
     		    			   u_light_quadratic * (distance * distance));  
+	// Once we calculate the attenuation scale, we simply modify the color
+	// of the light accordingly.
 	u_light_color *= attenuation;
 	return u_light_color * u_mat_diffuse * lambert
 			     + u_light_color * u_mat_specular * pow(phong, u_mat_shiny)
@@ -67,39 +83,42 @@ vec4 calculate_player_light()
 
 vec4 calculate_player_flashlight()
 {
-	// https://learnopengl.com/Lighting/Light-casters
-	// fragpos = v_position
-	// lightdir = vector from fragpos to light pos
+	// Direction of the light as always.
 	vec4 light_dir = normalize(u_player_flashlight_position - v_position);
-	float theta = dot(light_dir, normalize(-u_player_flashlight_direction));
-		
-	if(theta > u_player_flashlight_cutoff) 
-	{	
-		// float epsilon = u_player_flashlight_cutoff - u_player_flashlight_outer_cutoff;
-		// float intensity = clamp((theta - u_player_flashlight_outer_cutoff) / epsilon, 0.0, 1.0);
-		// vec4 v = normalize(u_eye_position - v_position);
-		// vec4 vh = normalize(light_dir + v);
+	// Now we want to calculate the angle of the light between the light and the target
+	float theta = dot(light_dir, normalize(u_player_flashlight_direction));
+	// If we just check the angle, we'd end up with an unnatural ring of light,
+	// so we need to calculate some fudge values.
+	float epsilon = u_player_flashlight_cutoff - u_player_flashlight_outer_cutoff;
+	// As it gets further away from the cutoff point, 
+	// it gets darker, until it's completely black.
+	float intensity = clamp((theta - u_player_flashlight_outer_cutoff) / epsilon, 0.0, 1.0);
+	
+	// Then we simply calculate the colors, same as always.
+	vec4 v = normalize(u_eye_position - v_position);
+	vec4 vh = normalize(light_dir + v);
 
-		// float lambert = max(dot(v_normal, light_dir), 0.0);
-		// float phong = max(dot(v_normal, vh), 0.0);
-		// u_player_flashlight_color *= intensity;
-		// return u_player_flashlight_color * u_mat_diffuse * lambert
-		// 	+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
-		// 	+ (u_player_flashlight_color * 0.01);
-		// do lighting calculations
-		return u_player_flashlight_color * 0.9;
-	}
-	else  // else, use ambient light so scene isn't completely dark outside the spotlight.
-		return u_player_flashlight_color * 0.01;
+	float lambert = max(dot(v_normal, light_dir), 0.0);
+	float phong = max(dot(v_normal, vh), 0.0);
+	// But don't forget to modify the intensity.
+	u_player_flashlight_color *= intensity;
+	return u_player_flashlight_color * u_mat_diffuse * lambert
+		+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
+		+ (u_player_flashlight_color * 0.01);
 }
 
 void main(void)
 {   
+	// I decided to break the main function into multiple
+    // sub functions, since it makes for much more readable code.
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
-	gl_FragColor += u_mat_diffuse * u_mat_emit; 
-	// gl_FragColor += calculate_player_flashlight();
-	// gl_FragColor = vec4(0.1, 0.0, 0.0, 1.0);
-	// gl_FragColor *= 0.01;
-	// gl_FragColor += vec4(abs(v_normal.xyz), 1.0);
+	gl_FragColor += calculate_player_flashlight();
+	gl_FragColor += u_mat_diffuse * u_mat_emit;
+	if(u_fog > 0)
+	{
+		float len = max(min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 0.0);
+		// gl_FragColor = vec4(gl_FragColor.rgb * len + (1 - len) * u_fog_color, gl_FragColor.a);
+		gl_FragColor = vec4(gl_FragColor.rgb * min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 1);
+	}
 }

@@ -54,9 +54,9 @@ class Shader3D:
         self.flashlightDirection    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_direction")
         self.flashlightDiffuseLoc   = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_color")
         self.flashlightCutoff       = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_cutoff")
-        self.flashlightAttConstant  = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_constant")
-        self.flashlightAttLinear    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_linear")
-        self.flashlightAttQuadratic = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_quad")
+        # self.flashlightAttConstant  = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_constant")
+        # self.flashlightAttLinear    = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_linear")
+        # self.flashlightAttQuadratic = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_quad")
         self.flashlightOuterCutoff  = glGetUniformLocation(self.renderingProgramID, "u_player_flashlight_outer_cutoff")
 
         # Material
@@ -70,6 +70,9 @@ class Shader3D:
         self.viewMatrixLoc       = glGetUniformLocation(self.renderingProgramID, "u_view_matrix")
         self.projectionMatrixLoc = glGetUniformLocation(self.renderingProgramID, "u_projection_matrix")
         
+        # "fog"
+        self.fogDistance = glGetUniformLocation(self.renderingProgramID, "u_fog")
+        self.fogColor    = glGetUniformLocation(self.renderingProgramID, "u_fog_color")
 
     def use(self):
         try:
@@ -135,14 +138,14 @@ class Shader3D:
     def set_flashlight_outer_cutoff(self, f):
         glUniform1f(self.flashlightOuterCutoff, f)
 
-    def set_flashlight_attenuation_constant(self, f):
-        glUniform1f(self.flashlightAttConstant, f)
+    # def set_flashlight_attenuation_constant(self, f):
+    #     glUniform1f(self.flashlightAttConstant, f)
 
-    def set_flashlight_attenuation_linear(self, f):
-        glUniform1f(self.flashlightAttLinear, f)
+    # def set_flashlight_attenuation_linear(self, f):
+    #     glUniform1f(self.flashlightAttLinear, f)
 
-    def set_flashlight_attenuation_quad(self, f):
-        glUniform1f(self.flashlightAttQuadratic, f)
+    # def set_flashlight_attenuation_quad(self, f):
+    #     glUniform1f(self.flashlightAttQuadratic, f)
 
     # Model
     def set_material_diffuse(self, rgb, a=1.0):
@@ -156,3 +159,9 @@ class Shader3D:
 
     def set_material_emit(self, e):
         glUniform1f(self.materialEmit, e)
+    
+    def set_fog_distance(self, f):
+        glUniform1f(self.fogDistance, f)
+
+    def set_fog_color(self, rgb):
+        glUniform4f(self.fogColor, rgb[0], rgb[1], rgb[2], 1.0)

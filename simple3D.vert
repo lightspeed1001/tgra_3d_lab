@@ -11,22 +11,17 @@ varying vec4 v_s;
 varying vec4 v_h;
 varying vec4 v_position;
 
-// uniform vec4 u_eye_position;
-// uniform vec4 u_light_position;
-
 void main(void)
 {
+	// The only thing that the vertex shader does is convert from 
+    // the meshes' local coordinates into global coordinates.
+    // We need these two vectors to calculate the fragment shader properly.
 	vec4 position = vec4(a_position.x, a_position.y, a_position.z, 1.0);
 	position = u_model_matrix * position;
-
 	vec4 normal = vec4(a_normal.x, a_normal.y, a_normal.z, 0.0);
+    // Send the position and normal into the fragment shader.
 	v_normal = normalize(u_model_matrix * normal);
-	
-	// v_s = normalize(u_light_position - position);
-
-	// vec4 v = normalize(u_eye_position - position);
-	// v_h = normalize(v_s + v);
-
 	v_position = position;
-	gl_Position = u_projection_matrix * u_view_matrix * position;;
+    // Convert from local coordinates into global coordinates
+	gl_Position = u_projection_matrix * u_view_matrix * position;
 }

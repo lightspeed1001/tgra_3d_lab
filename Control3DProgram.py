@@ -115,7 +115,21 @@ class GraphicsProgram3D:
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
         
-        # Draw the goal?
+        # Draw the ceiling
+        self.model_matrix.push_matrix()
+        self.shader.set_material_diffuse(COLOR_CEILING)
+        self.shader.set_material_shiny(SHINY_CEILING)
+        self.shader.set_material_specular(SPECULAR_CEILING)
+        self.shader.set_material_emit(EMIT_WALL)
+        self.model_matrix.add_movement(position=self.ceiling.position)
+        self.model_matrix.add_x_scale(self.ceiling.scale.x)
+        self.model_matrix.add_y_scale(self.ceiling.scale.y)
+        self.model_matrix.add_z_scale(self.ceiling.scale.z)
+        self.shader.set_model_matrix(self.model_matrix.matrix)
+        self.cube.draw(self.shader)
+        self.model_matrix.pop_matrix()
+
+        # Draw the goal
         # Alpha test for fun
         # glEnable(GL_BLEND)
         # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -237,9 +251,12 @@ class GraphicsProgram3D:
         self.shader.set_flashlight_color(PLAYER_FLASHLIGHT_COLOR)
         self.shader.set_flashlight_cutoff(PLAYER_FLASHLIGHT_CUTOFF)
         self.shader.set_flashlight_outer_cutoff(PLAYER_FLASHLIGHT_OUTER_CUTOFF)
-        self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
-        self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
-        self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
+        # self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
+        # self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
+        # self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
+
+        self.shader.set_fog_distance(FOG_DISTANCE)
+        self.shader.set_fog_color(FOG_COLOR)
 
     def setup_maze(self):
         w = MAZE_WIDTH
@@ -257,6 +274,10 @@ class GraphicsProgram3D:
         floor_scale = Point(floor_size_x, floor_size_y, floor_size_z)
         self.floor = Wall(floor_pos, floor_scale)
         
+        # Ceiling setup
+        ceiling_pos = floor_pos + Point(0, wall_scale, 0)
+        self.ceiling = Wall(ceiling_pos, floor_scale)
+
         # Maze setup
         self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
         self.maze.generate_maze()
