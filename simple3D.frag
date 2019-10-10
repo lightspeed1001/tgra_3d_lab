@@ -35,23 +35,28 @@ uniform vec4 u_fog_color;
 
 vec4 calculate_directional_light()
 {
-	// Start by checking in what direction the light is facing.
-    // For some weird reason, the "standard" thing to do is
-    // to face the light away from the scene, 
-    // and then reverse it in the shader.
+	/*
+	Since this is a directional light, we don't need to calculate its' direction.
+    For some weird reason, the "standard" thing to do is
+    to face the light away from the scene, 
+    and then reverse it in the shader.
+	*/
 	vec4 light_dir = normalize(-u_global_light_direction);
     // Get the vector from the camera to the fragment
 	vec4 v = normalize(u_eye_position - v_position);
-    // Get the vector from the light to the other one
-    // It's used to calculate the specularity
+    /* 
+	Get the halfway vector between the light direction
+	and the eye direction.
+    It's used to calculate the specularity.
+	*/
 	vec4 vh = normalize(light_dir + v);
 
-    // Calculate the true color of the material
+    // Calculate the true color of the material.
 	float lambert = max(dot(v_normal, light_dir), 0.0);
-    // Calculate the specularity/shininess
+    // Calculate the specularity/shininess.
 	float phong = max(dot(v_normal, vh), 0.0);
 
-    // Combine the values, along with a little bit of ambience
+    // Combine the values, along with a little bit of ambience.
 	return u_global_light_color * u_mat_diffuse * lambert
 			+ u_global_light_color * u_mat_specular * pow(phong, u_mat_shiny)
 			+ (u_global_light_color * 0.01);
@@ -60,11 +65,15 @@ vec4 calculate_directional_light()
 vec4 calculate_player_light()
 {
 	// https://learnopengl.com/Lighting/Light-casters
-	// This function is identical to the other one, with one added thing.
-	vec4 light_dir = normalize(u_light_position - v_position);
+	/* 
+	This function is very similar to the directional light,
+	the only thing we need to do is calculate the direction,
+	since that changes depending on where in the world the light is.
+	*/
+	vec4 light_dir = normalize(u_light_position - v_position); // hlutur í ljós
 
-	vec4 v = normalize(u_eye_position - v_position);
-	vec4 v_h = normalize(light_dir + v);
+	vec4 v = normalize(u_eye_position - v_position); // hlutur í myndavél
+	vec4 v_h = normalize(light_dir + v); // halfway á milli v og light
 
 	float lambert = max(dot(v_normal, light_dir), 0.0);
 	float phong = max(dot(v_normal, v_h), 0.0);
@@ -85,7 +94,7 @@ vec4 calculate_player_flashlight()
 {
 	// Direction of the light as always.
 	vec4 light_dir = normalize(u_player_flashlight_position - v_position);
-	// Now we want to calculate the angle of the light between the light and the target
+	// Now we want to calculate the angle between the light and the target.
 	float theta = dot(light_dir, normalize(u_player_flashlight_direction));
 	// If we just check the angle, we'd end up with an unnatural ring of light,
 	// so we need to calculate some fudge values.
@@ -101,7 +110,7 @@ vec4 calculate_player_flashlight()
 	float lambert = max(dot(v_normal, light_dir), 0.0);
 	float phong = max(dot(v_normal, vh), 0.0);
 
-	// Flashlights don't go infinitely far, so we limit that as well
+	// Flashlights don't go infinitely far, so it fades as it gets further away.
 	float distance    = length(u_player_flashlight_position - v_position);
 	float attenuation = 1.0 / (u_player_flashlight_constant + u_player_flashlight_linear * distance + 
     		    			   u_player_flashlight_quad * (distance * distance));  

@@ -126,9 +126,9 @@ class ModelMatrix:
 class ViewMatrix:
     def __init__(self):
         self.eye = Point(0, 0, 0)
-        self.u = Vector(1, 0, 0)
-        self.v = Vector(0, 1, 0)
-        self.n = Vector(0, 0, 1)
+        self.u = Vector(1, 0, 0) # left
+        self.v = Vector(0, 1, 0) # up
+        self.n = Vector(0, 0, 1) # back
 
     def look(self, eye, center, up):
         self.eye = eye

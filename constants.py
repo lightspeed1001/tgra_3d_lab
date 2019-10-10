@@ -21,12 +21,12 @@ PLAYER_STARTING_LOOK = PLAYER_STARTING_POS + Point(5, 0, 0)
 VECTOR_UP = Vector(0, 1, 0)
 
 # Colors
-COLOR_PLAYER = (0.8, 0.05, 0.8)
-COLOR_WALL   = (0.7, 0.7, 0.7)
-COLOR_FLOOR  = (0.05, 0.9, 0.1)
-COLOR_ENEMY  = (0.9, 0.05, 0.05)
-COLOR_BG     = (0.0, 0.0, 0.0, 1.0)
-COLOR_GOAL   = (0.05, 0.05, 0.9)
+COLOR_PLAYER  = (0.8, 0.05, 0.8)
+COLOR_WALL    = (0.7, 0.7, 0.7)
+COLOR_FLOOR   = (0.05, 0.9, 0.1)
+COLOR_ENEMY   = (0.9, 0.05, 0.05)
+COLOR_BG      = (0.0, 0.0, 0.0, 1.0)
+COLOR_GOAL    = (0.05, 0.05, 0.9)
 COLOR_CEILING = (0.5, 0.0, 0.0)
 
 # Specular
@@ -50,7 +50,7 @@ EMIT_PLAYER = 0.0
 EMIT_WALL = 0.0
 EMIT_FLOOR = 0.0
 EMIT_ENEMY = 0.0
-EMIT_GOAL = 0.1
+EMIT_GOAL = 0.5
 EMIT_CEILING = 0.0
 
 # Game Settings
@@ -80,9 +80,12 @@ FOG_DISTANCE = 32 # this roughly corresponds to the range of the flashlight
 FOG_COLOR = (0.1, 0.1, 0.1)
 
 # Maze
-MAZE_WIDTH  = 11
-MAZE_HEIGHT = 11
+# Minimum size is 5x5 and only odd numbers allowed
+# There is no maximum, but above 25 you'll run into severe performance issues
+MAZE_WIDTH  = 23
+MAZE_HEIGHT = 23
 MAZE_COMPLEXITY = 0.75
 MAZE_DENSITY = 0.75
 MAZE_WALL_SIZE = 5
 MAZE_FLOOR_THICK = 0.5
+MAZE_GOAL_SIZE = 2

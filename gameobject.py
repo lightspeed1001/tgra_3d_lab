@@ -34,8 +34,6 @@ class Player(GameObject):
         self.radius = self.scale.x / 2
     
     def collision_check(self, other):
-        # Just check if player is inside the object and eject him
-        
         # Update player bounding box first
         self.update_bounding_box()
 
@@ -57,14 +55,7 @@ class Player(GameObject):
                 return
             if(-h >= abs(w)):
                 self.position.z = other.max_z + self.scale.z / 2
-                return
-            # print("min_x: {}; max_x: {}; min_y: {}; max_y: {}; min_z: {}; max_xz {};".format(self.min_x, self.max_x, self.min_y, self.max_y, self.min_z, self.max_z))
-
-            # if( self.position.z > other.position.z and
-            #     self.position.x > other.min_z and
-            #     self.position.x < other.max_x):
-            #         self.position.z = other.max_z + self.scale.z / 2
-            #         return True
+                return   
     
     def sphere_intersects(self, other):
         x = max(other.position.x - other.scale.x / 2, min(self.position.x, (other.position.x + other.scale.x / 2)))
@@ -77,18 +68,20 @@ class Player(GameObject):
 
         return distance_squared < (self.radius ** 2)
 
+# Not used because time
 class Enemy(GameObject):
     """ Enemy is a sphere """
     def __init__(self, position, scale = Point(1,1,1), rotation = None, friction = 0.0, acceleration = 1.0):
         super().__init__(position, scale, rotation, friction)
         self.direction = None
         self.acceleration = acceleration
-
+    
+    def make_decision(self, left, right, up, down):
+        pass
+    
 class Wall(GameObject):
     def __init__(self, position: Point, scale: Point = Point(1, 1, 1), rotation: Point = None, friction = 0.0):
         super().__init__(position, scale, rotation, friction)
-        
-    pass
 
 class Trigger(GameObject):
     def collision_check(self, other):

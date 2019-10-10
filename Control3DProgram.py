@@ -47,19 +47,21 @@ class GraphicsProgram3D:
         if self.player.collision_check(self.floor):
             pass
 
-        if self.goal.collision_check(self.player):
-            self.new_game()
-
         # Check for collisions
         for cube in self.chunks:
             if self.player.collision_check(cube):
                 pass
+
+        if self.goal.collision_check(self.player):
+            print("You solved the maze!\nGenerating new maze!")
+            self.new_game()
 
 
     def display(self):
         # Draw boilerplate
         glEnable(GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
         glEnable(GL_FRAMEBUFFER_SRGB)
+        # Enable AA
         glEnable(GL_MULTISAMPLE)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -70,16 +72,14 @@ class GraphicsProgram3D:
         # self.project_matrix.set_perspective(self.fov, 800.0/600.0, 0.5, 10)
         # self.shader.set_projection_matrix(self.project_matrix.get_matrix())
         
-
         # Lights
-        # Attached to player
+        # Player lantern
         self.shader.set_light_position(self.view_matrix.eye)
         
         # Flashlight
         flashy_position = Point(self.view_matrix.eye.x, self.view_matrix.eye.y * 0.7, self.view_matrix.eye.z)
         self.shader.set_flashlight_position(flashy_position)
-        # eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
-        self.shader.set_flashlight_direction(self.view_matrix.n)
+        self.shader.set_flashlight_direction(self.view_matrix.n) # n is back, so that works out perfectly
 
         # Zero out model matrix, just in case
         self.model_matrix.load_identity()
@@ -121,7 +121,7 @@ class GraphicsProgram3D:
         self.shader.set_material_diffuse(COLOR_CEILING)
         self.shader.set_material_shiny(SHINY_CEILING)
         self.shader.set_material_specular(SPECULAR_CEILING)
-        self.shader.set_material_emit(EMIT_WALL)
+        self.shader.set_material_emit(EMIT_CEILING)
         self.model_matrix.add_movement(position=self.ceiling.position)
         self.model_matrix.add_x_scale(self.ceiling.scale.x)
         self.model_matrix.add_y_scale(self.ceiling.scale.y)
@@ -131,7 +131,9 @@ class GraphicsProgram3D:
         self.model_matrix.pop_matrix()
 
         # Draw the goal
-        # Alpha test for fun
+        # Set the drawing mode to spheres first.
+        self.sphere.set_verties(self.shader)
+        # Alpha test for fun. Doesn't appear to work with spheres?
         # glEnable(GL_BLEND)
         # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.model_matrix.push_matrix()
@@ -142,28 +144,11 @@ class GraphicsProgram3D:
         self.shader.set_material_emit(EMIT_GOAL)
         
         self.model_matrix.add_movement(position = self.goal.position)
-        self.model_matrix.add_scale(self.goal.scale.x) # The walls are perfect cubes
+        self.model_matrix.add_scale(self.goal.scale.x)
         self.shader.set_model_matrix(self.model_matrix.matrix)
-        self.cube.draw(self.shader)
-        
+        self.sphere.draw(self.shader)
         self.model_matrix.pop_matrix()
         # glDisable(GL_BLEND)
-
-        # Sphere drawing mode
-        # self.sphere.set_verties(self.shader)
-
-        # Sphere
-        # self.model_matrix.push_matrix()
-        # ball_x = self.view_matrix.eye.x # + self.view_matrix.n.x + 1
-        # ball_y = self.view_matrix.eye.y - 4
-        # ball_z = self.view_matrix.eye.z # + self.view_matrix.n.z + 1 
-        # self.model_matrix.add_movement(Point(ball_x, ball_y, ball_z))
-        # # self.model_matrix.add_movement(Point(5,1,5))
-        # self.model_matrix.add_scale(PLAYER_RADIUS)
-        # self.shader.set_material_diffuse(COLOR_ENEMY)
-        # self.shader.set_model_matrix(self.model_matrix.matrix)
-        # self.sphere.draw(self.shader)
-        # self.model_matrix.pop_matrix()
 
         pygame.display.flip()
 
@@ -184,10 +169,8 @@ class GraphicsProgram3D:
 
         if keys[K_LEFT]:
             self.view_matrix.yaw(OTHER_SPEED)
-            # print(self.view_matrix.n)
         if keys[K_RIGHT]:
             self.view_matrix.yaw(-OTHER_SPEED)
-            # print(self.view_matrix.n)
 
         # if keys[K_e]:
         #     self.view_matrix.roll(-OTHER_SPEED)
@@ -248,21 +231,22 @@ class GraphicsProgram3D:
         self.shader.set_light_attenuation_linear(PLAYER_LIGHT_ATT_LINEAR)
         self.shader.set_light_attenuation_quad(PLAYER_LIGHT_ATT_QUAD)
         # Flashlight
-        self.shader.set_flashlight_direction(self.view_matrix.n)
         self.shader.set_flashlight_color(PLAYER_FLASHLIGHT_COLOR)
         self.shader.set_flashlight_cutoff(PLAYER_FLASHLIGHT_CUTOFF)
         self.shader.set_flashlight_outer_cutoff(PLAYER_FLASHLIGHT_OUTER_CUTOFF)
         self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
         self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
         self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
-
+        # Fog (technically an anti-light)
         self.shader.set_fog_distance(FOG_DISTANCE)
         self.shader.set_fog_color(FOG_COLOR)
 
     def setup_maze(self):
         w = MAZE_WIDTH
         h = MAZE_HEIGHT
-        
+        assert w & 1, "Width isn't odd!"
+        assert h & 1, "Height isn't odd!"
+        assert w >= 5 or h >= 5, "Maze too small!"
         # Floor setup
         wall_scale = MAZE_WALL_SIZE
         floor_size_x = wall_scale * h
@@ -291,11 +275,15 @@ class GraphicsProgram3D:
                     y = 0
                     z = col_num * wall_scale
                     self.chunks.append(Wall(Point(x, y, z), wall_scale_p))
-
+        
+        # Goal setup
+        # It's theoretically possible for the goal to end up inside a wall,
+        # but it's unlikely.
         goal_x = (w-2) * wall_scale
         goal_y = 0
         goal_z = (h-2) * wall_scale
-        self.goal = Trigger(Point(goal_x, goal_y, goal_z), wall_scale_p)
+        goal_scale = Point(MAZE_GOAL_SIZE,MAZE_GOAL_SIZE,MAZE_GOAL_SIZE)
+        self.goal = Trigger(Point(goal_x, goal_y, goal_z), goal_scale)
 
     def setup_player(self):
         self.player = Player(self.view_matrix.eye, Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
