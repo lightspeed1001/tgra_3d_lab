@@ -76,7 +76,8 @@ class GraphicsProgram3D:
         self.shader.set_light_position(self.view_matrix.eye)
         
         # Flashlight
-        self.shader.set_flashlight_position(self.view_matrix.eye)
+        flashy_position = Point(self.view_matrix.eye.x, self.view_matrix.eye.y * 0.7, self.view_matrix.eye.z)
+        self.shader.set_flashlight_position(flashy_position)
         # eye_back = Point(-self.view_matrix.n.x, -self.view_matrix.n.y, -self.view_matrix.n.z)
         self.shader.set_flashlight_direction(self.view_matrix.n)
 
@@ -251,9 +252,9 @@ class GraphicsProgram3D:
         self.shader.set_flashlight_color(PLAYER_FLASHLIGHT_COLOR)
         self.shader.set_flashlight_cutoff(PLAYER_FLASHLIGHT_CUTOFF)
         self.shader.set_flashlight_outer_cutoff(PLAYER_FLASHLIGHT_OUTER_CUTOFF)
-        # self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
-        # self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
-        # self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
+        self.shader.set_flashlight_attenuation_constant(PLAYER_FLASHLIGHT_ATT_CONSTANT)
+        self.shader.set_flashlight_attenuation_linear(PLAYER_FLASHLIGHT_ATT_LINEAR)
+        self.shader.set_flashlight_attenuation_quad(PLAYER_FLASHLIGHT_ATT_QUAD)
 
         self.shader.set_fog_distance(FOG_DISTANCE)
         self.shader.set_fog_color(FOG_COLOR)

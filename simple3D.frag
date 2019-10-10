@@ -19,9 +19,9 @@ uniform vec4 u_player_flashlight_direction;
 uniform vec4 u_player_flashlight_color;
 uniform float u_player_flashlight_cutoff;
 uniform float u_player_flashlight_outer_cutoff;
-// uniform float u_player_flashlight_constant;
-// uniform float u_player_flashlight_linear;
-// uniform float u_player_flashlight_quad;
+uniform float u_player_flashlight_constant;
+uniform float u_player_flashlight_linear;
+uniform float u_player_flashlight_quad;
 
 // Material
 uniform vec4 u_mat_diffuse;
@@ -100,8 +100,15 @@ vec4 calculate_player_flashlight()
 
 	float lambert = max(dot(v_normal, light_dir), 0.0);
 	float phong = max(dot(v_normal, vh), 0.0);
-	// But don't forget to modify the intensity.
+
+	// Flashlights don't go infinitely far, so we limit that as well
+	float distance    = length(u_player_flashlight_position - v_position);
+	float attenuation = 1.0 / (u_player_flashlight_constant + u_player_flashlight_linear * distance + 
+    		    			   u_player_flashlight_quad * (distance * distance));  
+
+	// Remember to modify the color according to our intensity and attenuation!
 	u_player_flashlight_color *= intensity;
+	u_player_flashlight_color *= attenuation;
 	return u_player_flashlight_color * u_mat_diffuse * lambert
 		+ u_player_flashlight_color * u_mat_specular * pow(phong, u_mat_shiny)
 		+ (u_player_flashlight_color * 0.01);
@@ -113,12 +120,16 @@ void main(void)
     // sub functions, since it makes for much more readable code.
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
-	gl_FragColor += calculate_player_flashlight();
+	// None of my materials have any emissions, but just in case
 	gl_FragColor += u_mat_diffuse * u_mat_emit;
 	if(u_fog > 0)
 	{
+		// The fog effect simply fades all the colors to the fog color,
+		// as objects get further away.
 		float len = max(min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 0.0);
-		// gl_FragColor = vec4(gl_FragColor.rgb * len + (1 - len) * u_fog_color, gl_FragColor.a);
 		gl_FragColor = vec4(gl_FragColor.rgb * min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 1);
 	}
+	// I wanted the flashlight to cut through the fog, just to see if I could.
+	// It works great.
+	gl_FragColor += calculate_player_flashlight();
 }
