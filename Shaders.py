@@ -1,4 +1,5 @@
 from OpenGL.GL import *
+from OpenGL.GLU import *
 from math import *  # trigonometry
 
 from Base3DObjects import *
@@ -122,7 +123,7 @@ class Shader3D:
         glUniform4f(self.lightPosLoc, pos.x, pos.y, pos.z, 1.0)
 
     def set_light_diffuse(self, rgb):
-        glUniform4f(self.lightDiffuseLoc, rgb[0], rgb[1], rgb[2], 1.0)
+        glUniform4f(self.lightDiffuseLoc, rgb.r, rgb.g, rgb.b, 1.0)
     
     def set_light_attenuation_constant(self, f):
         glUniform1f(self.lightAttConstant, f)
@@ -138,7 +139,7 @@ class Shader3D:
         glUniform4f(self.globalLightDirection, pos.x, pos.y, pos.z, 1.0)
 
     def set_global_light_color(self, rgb):
-        glUniform4f(self.globalLightColor, rgb[0], rgb[1], rgb[2], 1.0)
+        glUniform4f(self.globalLightColor, rgb.r, rgb.g, rgb.b, 1.0)
 
     # Flashlight
     def set_flashlight_position(self, pos):
@@ -148,7 +149,7 @@ class Shader3D:
         glUniform4f(self.flashlightDirection, pos.x, pos.y, pos.z, 1.0)
 
     def set_flashlight_color(self, rgb, a=1.0):
-        glUniform4f(self.flashlightDiffuseLoc, rgb[0], rgb[1], rgb[2], a)
+        glUniform4f(self.flashlightDiffuseLoc, rgb.r, rgb.g, rgb.b, a)
 
     def set_flashlight_cutoff(self, f):
         glUniform1f(self.flashlightCutoff, f)
@@ -166,11 +167,11 @@ class Shader3D:
         glUniform1f(self.flashlightAttQuadratic, f)
 
     # Model
-    def set_material_diffuse(self, rgb, a=1.0):
-        glUniform4f(self.materialDiffuseLoc, rgb[0], rgb[1], rgb[2], a)
+    # def set_material_diffuse(self, rgb, a=1.0):
+    #     glUniform4f(self.materialDiffuseLoc, rgb[0], rgb[1], rgb[2], a)
 
-    def set_material_specular(self, rgb):
-        glUniform4f(self.materialSpecularLoc, rgb[0], rgb[1], rgb[2], 1.0)
+    # def set_material_specular(self, rgb):
+    #     glUniform4f(self.materialSpecularLoc, rgb[0], rgb[1], rgb[2], 1.0)
 
     def set_material_shiny(self, s):
         glUniform1f(self.materialShinyLoc, s)
@@ -182,9 +183,31 @@ class Shader3D:
         glUniform1f(self.fogDistance, f)
 
     def set_fog_color(self, rgb):
-        glUniform4f(self.fogColor, rgb[0], rgb[1], rgb[2], 1.0)
+        glUniform4f(self.fogColor, rgb.r, rgb.g, rgb.b, 1.0)
 
     # Texture
     def set_use_texture(self, f):
         glUniform1f(self.useTexture, f)
         
+    # Mesh lab
+    def set_attribute_buffers(self, vertex_buffer_id, has_texture=0):
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
+        if(has_texture):
+            glVertexAttribPointer(self.positionLoc, 3, GL_FLOAT, False, 8 * sizeof(GLfloat), OpenGL.GLU.ctypes.c_void_p(0))
+            glVertexAttribPointer(self.normalLoc, 3, GL_FLOAT, False, 8 * sizeof(GLfloat), OpenGL.GLU.ctypes.c_void_p(3 * sizeof(GLfloat)))
+            glVertexAttribPointer(self.textureLoc, 2, GL_FLOAT, False, 8 * sizeof(GLfloat), OpenGL.GLU.ctypes.c_void_p(6 * sizeof(GLfloat)))
+        else:
+            glVertexAttribPointer(self.positionLoc, 3, GL_FLOAT, False, 6 * sizeof(GLfloat), OpenGL.GLU.ctypes.c_void_p(0))
+            glVertexAttribPointer(self.normalLoc, 3, GL_FLOAT, False, 6 * sizeof(GLfloat), OpenGL.GLU.ctypes.c_void_p(3 * sizeof(GLfloat)))
+
+        # glVertexAttribPointer(self.positionLoc, 3, GL_FLOAT, False, 0, None)
+        # glVertexAttribPointer(self.normalLoc, 3, GL_FLOAT, False, 0, None)
+
+    def set_material_diffuse(self, color):
+        glUniform4f(self.materialDiffuseLoc, color.r, color.g, color.b, 1.0)
+    
+    def set_material_specular(self, color):
+        glUniform4f(self.materialSpecularLoc, color.r, color.g, color.b, 1.0)
+
+    # def set_material_shiny(self, shininess):
+    #     glUniform1f(self.materialShinyLoc, shininess)

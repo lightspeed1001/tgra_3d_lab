@@ -29,14 +29,15 @@ class GraphicsProgram3D:
 
         # Objects
         self.model_matrix = ModelMatrix()
-        self.cube = Cube()
-        self.sphere = Sphere(24, 48)
+        self.cube = OptiCube()
+        self.sphere = OptiSphere(24, 48)
 
         # Game settings
         self.fov = DEFAULT_FOV
         self.gravity = DEFAULT_GRAVITY
         self.clock = pygame.time.Clock()
         self.clock.tick()
+        self.fps_print = 0.0
 
         # Texture
         # glActiveTexture(GL_TEXTURE0)
@@ -72,6 +73,7 @@ class GraphicsProgram3D:
 
     def update(self):
         delta_time = self.clock.tick() / 1000.0
+        self.fps_print += delta_time
 
         self.handle_input(pygame.key.get_pressed(), delta_time)
         # self.view_matrix.eye.y -= DEFAULT_GRAVITY * delta_time
@@ -87,6 +89,9 @@ class GraphicsProgram3D:
         if self.goal.collision_check(self.player):
             print("You solved the maze!\nGenerating new maze!")
             self.new_game()
+        if(self.fps_print >= 1):
+            print(self.clock.get_fps())
+            self.fps_print = 0.0
 
 
     def display(self):
@@ -182,7 +187,6 @@ class GraphicsProgram3D:
 
         # Draw the goal
         # Set the drawing mode to spheres first.
-        self.sphere.set_verties(self.shader)
         # Alpha test for fun. Doesn't appear to work with spheres?
         # glEnable(GL_BLEND)
         # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -256,6 +260,7 @@ class GraphicsProgram3D:
                         exiting = True
             self.update()
             self.display()
+
 
         # OUT OF GAME LOOP
         pygame.quit()
@@ -346,7 +351,7 @@ class GraphicsProgram3D:
 
     def start(self):
         self.new_game()
-        glClearColor(COLOR_BG[0], COLOR_BG[1], COLOR_BG[2], COLOR_BG[3])
+        glClearColor(COLOR_BG.r, COLOR_BG.b, COLOR_BG.g, 1.0)
         self.program_loop()
 
 
