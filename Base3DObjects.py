@@ -64,6 +64,38 @@ class Vector:
 
 class Cube:
     def __init__(self):
+        self.texture_array = [
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+            
+            0,0,
+            0,1,
+            1,1,
+            1,0,
+        ]
+
         self.position_array = [-0.5, -0.5, -0.5,
                                -0.5, 0.5, -0.5,
                                0.5, 0.5, -0.5,
@@ -116,6 +148,7 @@ class Cube:
     def set_vertices(self, shader):
         shader.set_position_attribute(self.position_array)
         shader.set_normal_attribute(self.normal_array)
+        shader.set_texture_attribute(self.texture_array)
 
     def draw(self, shader):
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4)

@@ -38,6 +38,38 @@ class GraphicsProgram3D:
         self.clock = pygame.time.Clock()
         self.clock.tick()
 
+        # Texture
+        # glActiveTexture(GL_TEXTURE0)
+        self.shader.set_diffuse_texture(0)
+        self.tex_id_01_diffuse = self.load_texture("container2.png")
+        # self.tex_id_01_diffuse = self.load_texture("Brick_Wall_011_COLOR.jpg")
+        self.shader.set_specular_texture(1)
+        # glActiveTexture(GL_TEXTURE1)
+        # self.tex_id_01_specular = self.load_texture("Brick_Wall_011_OCC.jpg")
+        self.tex_id_01_specular = self.load_texture("container2_specular.png")
+        # self.tex_id2 = self.load_texture("container2.png")
+        print("Texture id diffuse: {}\nTexture id specular: {}".format(self.tex_id_01_diffuse, self.tex_id_01_specular))
+
+    def load_texture(self, image):
+        textureSurface = pygame.image.load(image)
+        textureData = pygame.image.tostring(textureSurface, "RGBA", 1)
+        width = textureSurface.get_width()
+        height = textureSurface.get_height()
+
+        # glEnable(GL_TEXTURE_2D)
+        texid = glGenTextures(1)
+
+        glBindTexture(GL_TEXTURE_2D, texid)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+                    0, GL_RGBA, GL_UNSIGNED_BYTE, textureData)
+
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+
+        return texid
+
     def update(self):
         delta_time = self.clock.tick() / 1000.0
 
@@ -88,6 +120,13 @@ class GraphicsProgram3D:
         self.cube.set_vertices(self.shader)
         
         # Draw the maze
+        glEnable(GL_TEXTURE_2D)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_01_diffuse)
+        glActiveTexture(GL_TEXTURE1)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_01_specular)
+        
+        self.shader.set_use_texture(1.0)
         self.shader.set_material_diffuse(COLOR_WALL)
         self.shader.set_material_specular(SPECULAR_WALL)
         self.shader.set_material_shiny(SHINY_WALL)
@@ -101,8 +140,15 @@ class GraphicsProgram3D:
             self.cube.draw(self.shader)
             
             self.model_matrix.pop_matrix()
+        self.shader.set_use_texture(0.0)
+        glDisable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, -1)
 
         # Draw the floor
+        # glEnable(GL_TEXTURE_2D)
+        # glBindTexture(GL_TEXTURE_2D, self.tex_id2)
+        # self.shader.set_use_texture(1.0)
+        
         self.model_matrix.push_matrix()
         self.shader.set_material_diffuse(COLOR_FLOOR)
         self.shader.set_material_shiny(SHINY_FLOOR)
@@ -115,6 +161,10 @@ class GraphicsProgram3D:
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.cube.draw(self.shader)
         self.model_matrix.pop_matrix()
+
+        # self.shader.set_use_texture(0.0)
+        # glDisable(GL_TEXTURE_2D)
+        # glBindTexture(GL_TEXTURE_2D, -1)
         
         # Draw the ceiling
         self.model_matrix.push_matrix()
@@ -260,14 +310,14 @@ class GraphicsProgram3D:
         self.floor = Wall(floor_pos, floor_scale)
         
         # Ceiling setup
-        ceiling_pos = floor_pos + Point(0, wall_scale, 0)
+        ceiling_pos = floor_pos + Point(0, wall_scale + floor_size_y, 0)
         self.ceiling = Wall(ceiling_pos, floor_scale)
 
         # Maze setup
         self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
         self.maze.generate_maze()
         self.chunks = []
-        wall_scale_p = Point(wall_scale*1.05, wall_scale*1.05, wall_scale*1.05)
+        wall_scale_p = Point(wall_scale*1.00, wall_scale*1.00, wall_scale*1.00)
         for row_num, row in enumerate(self.maze.maze):
             for col_num, col in enumerate(row):
                 if col:

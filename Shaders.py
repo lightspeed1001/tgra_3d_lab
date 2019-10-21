@@ -34,7 +34,9 @@ class Shader3D:
         glEnableVertexAttribArray(self.positionLoc)
         self.normalLoc = glGetAttribLocation(self.renderingProgramID, "a_normal")
         glEnableVertexAttribArray(self.normalLoc)
-
+        self.textureLoc = glGetAttribLocation(self.renderingProgramID, "a_uv")
+        glEnableVertexAttribArray(self.textureLoc)
+        
         # Eye position
         self.eyePosLoc = glGetUniformLocation(self.renderingProgramID, "u_eye_position")
         
@@ -74,12 +76,25 @@ class Shader3D:
         self.fogDistance = glGetUniformLocation(self.renderingProgramID, "u_fog")
         self.fogColor    = glGetUniformLocation(self.renderingProgramID, "u_fog_color")
 
+        # Texture
+        self.useTexture = glGetUniformLocation(self.renderingProgramID, "u_use_texture")
+        self.diffuse_texture = glGetUniformLocation(self.renderingProgramID, "u_tex_diffuse")
+        self.specular_texture = glGetUniformLocation(self.renderingProgramID, "u_tex_specular")
+        # glUniform
+
     def use(self):
         try:
             glUseProgram(self.renderingProgramID)
         except OpenGL.error.GLError:
             print(glGetProgramInfoLog(self.renderingProgramID))
             raise
+    
+    def set_diffuse_texture(self, i):
+        glUniform1i(self.diffuse_texture, i)
+        
+    def set_specular_texture(self, i):
+        glUniform1i(self.specular_texture, i)
+
 
     def set_model_matrix(self, matrix_array):
         glUniformMatrix4fv(self.modelMatrixLoc, 1, True, matrix_array)
@@ -95,6 +110,9 @@ class Shader3D:
 
     def set_normal_attribute(self, vertex_array):
         glVertexAttribPointer(self.normalLoc, 3, GL_FLOAT, False, 0, vertex_array)
+
+    def set_texture_attribute(self, vertex_array):
+        glVertexAttribPointer(self.textureLoc, 2, GL_FLOAT, False, 0, vertex_array)
 
     def set_eye_position(self, pos):
         glUniform4f(self.eyePosLoc, pos.x, pos.y, pos.z, 1.0)
@@ -165,3 +183,8 @@ class Shader3D:
 
     def set_fog_color(self, rgb):
         glUniform4f(self.fogColor, rgb[0], rgb[1], rgb[2], 1.0)
+
+    # Texture
+    def set_use_texture(self, f):
+        glUniform1f(self.useTexture, f)
+        
