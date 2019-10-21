@@ -29,6 +29,12 @@ uniform vec4 u_mat_specular;
 uniform float u_mat_shiny;
 uniform float u_mat_emit;
 
+// Texture
+varying vec2 v_uv;
+uniform sampler2D u_tex_diffuse;
+uniform sampler2D u_tex_specular;
+uniform float u_use_texture;
+
 // "fog"
 uniform float u_fog;
 uniform vec4 u_fog_color;
@@ -127,6 +133,12 @@ void main(void)
 {   
 	// I decided to break the main function into multiple
     // sub functions, since it makes for much more readable code.
+	if(u_use_texture)
+	{
+		u_mat_diffuse = texture2D(u_tex_diffuse, v_uv);
+		u_mat_specular = texture2D(u_tex_specular, v_uv);
+	}
+		
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
 	// None of my materials have any emissions, but just in case
