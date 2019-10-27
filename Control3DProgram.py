@@ -63,9 +63,11 @@ class GraphicsProgram3D:
         self.floor = None
         self.ceiling = None
         self.maze = None
-        self.chunks = None
+        self.walls = None
         self.goal = None
         self.player = None
+        self.walls_by_x = None
+        self.walls_by_z = None
 
     def load_texture(self, image):
         """ Loads a texture into the buffer """
@@ -101,8 +103,11 @@ class GraphicsProgram3D:
 
         self.player.update_bounding_box()
         # Check for collisions
-        for cube in self.chunks:
-            if self.player.collision_check(cube):
+        cubes_to_check = self.get_cubes_near_position(self.player.position)
+        # print(cubes_to_check)
+        for cube in cubes_to_check:
+            # print(cube)
+            if self.player.collision_check(self.walls[cube]):
                 pass
 
         #if self.goal.collision_check(self.player):
@@ -114,12 +119,30 @@ class GraphicsProgram3D:
             # print(self.player.collision_poly)
             self.fps_print = 0.0
 
+    def get_cubes_near_position(self, position, offset=5):
+        """ An attempt to make the collision check take less time """
+        pos_x = 5 * round(float(position.x)/5)
+        pos_z = 5 * round(float(position.z)/5)
+        cubes_x = []
+        cubes_z = []
+        for x in range(-2, 3):
+            new_x = pos_x + x * offset
+            new_z = pos_z + x * offset
+            # print(new_x, new_z)
+            if new_x in self.walls_by_x.keys():
+                cubes_x.extend(self.walls_by_x[new_x])
+            if new_z in self.walls_by_z.keys():
+                cubes_z.extend(self.walls_by_z[new_z])
+
+        return set(cubes_x) & set(cubes_z)
+
     def display(self):
         """ Draws the game world """
         # Draw boilerplate
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_FRAMEBUFFER_SRGB)
-        glCullFace(GL_FRONT)
+        # glEnable(GL_CULL_FACE)
+        # glCullFace(GL_BACK)
         # Enable AA
         glEnable(GL_MULTISAMPLE)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -162,7 +185,7 @@ class GraphicsProgram3D:
         self.shader.set_material_specular(SPECULAR_WALL)
         self.shader.set_material_shiny(SHINY_WALL)
         self.shader.set_material_emit(EMIT_WALL)
-        for cube in self.chunks:
+        for cube in self.walls:
             obj_dir = self.view_matrix.eye - cube.position
             # obj_dir.normalize()
             theta = obj_dir.dot(forward)
@@ -267,9 +290,9 @@ class GraphicsProgram3D:
         # if keys[K_q]:
         #     self.view_matrix.roll(other_speed)
 
-        if keys[K_DOWN]:
+        if keys[K_DOWN] and ALLOW_UP_DOWN_LOOK:
             self.view_matrix.pitch(other_speed)
-        if keys[K_UP]:
+        if keys[K_UP] and ALLOW_UP_DOWN_LOOK:
             self.view_matrix.pitch(-other_speed)
 
         # if keys[K_r]:
@@ -362,7 +385,9 @@ class GraphicsProgram3D:
         # Maze setup
         self.maze = Maze(w=w, h=h, complexity=MAZE_COMPLEXITY, density=MAZE_DENSITY)
         self.maze.generate_maze()
-        self.chunks = []
+        self.walls = []
+        self.walls_by_x = {}
+        self.walls_by_z = {}
         wall_scale_p = Point(wall_scale*1.00, wall_scale*1.00, wall_scale*1.00)
         for row_num, row in enumerate(self.maze.maze):
             for col_num, col in enumerate(row):
@@ -370,7 +395,18 @@ class GraphicsProgram3D:
                     x = row_num * wall_scale
                     y = 0
                     z = col_num * wall_scale
-                    self.chunks.append(Wall(Point(x, y, z), wall_scale_p))
+                    new_wall = Wall(Point(x, y, z), wall_scale_p)
+                    self.walls.append(new_wall)
+                    index = len(self.walls) - 1
+
+                    if x in self.walls_by_x.keys():
+                        self.walls_by_x[x].append(index)
+                    else:
+                        self.walls_by_x[x] = [index]
+                    if z in self.walls_by_z.keys():
+                        self.walls_by_z[z].append(index)
+                    else:
+                        self.walls_by_z[z] = [index]
 
         # Goal setup
         # It's theoretically possible for the goal to end up inside a wall,

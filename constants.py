@@ -4,8 +4,9 @@ from Matrices import Point, Vector
 from Base3DObjects import Color
 
 # Cheats
-JUMP = False
-WALLHACK = False
+JUMP = False # Not implemented
+WALLHACK = False # Not implemented
+ALLOW_UP_DOWN_LOOK = False
 
 # Window
 WINDOW_HEIGHT = 600
@@ -84,8 +85,8 @@ FOG_COLOR = Color(0.1, 0.1, 0.1)
 # Maze
 # Minimum size is 5x5 and only odd numbers allowed
 # There is no maximum, but above 25 you'll run into severe performance issues
-MAZE_WIDTH  = 23
-MAZE_HEIGHT = 23
+MAZE_WIDTH  = 51
+MAZE_HEIGHT = 51
 MAZE_COMPLEXITY = 0.75
 MAZE_DENSITY = 0.75
 MAZE_WALL_SIZE = 5
