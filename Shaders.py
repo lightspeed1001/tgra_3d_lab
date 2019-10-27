@@ -1,11 +1,11 @@
+from math import *  # trigonometry
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from math import *  # trigonometry
-
 from Base3DObjects import *
 
 
 class Shader3D:
+    """ Talks to the fragment/vertex shader programs """
     def __init__(self):
         vert_shader = glCreateShader(GL_VERTEX_SHADER)
         shader_file = open("simple3D.vert")
@@ -14,7 +14,8 @@ class Shader3D:
         glCompileShader(vert_shader)
         result = glGetShaderiv(vert_shader, GL_COMPILE_STATUS)
         if result != 1:  # shader didn't compile
-            print("Couldn't compile vertex shader\nShader compilation Log:\n" + str(glGetShaderInfoLog(vert_shader)))
+            print("Couldn't compile vertex shader\nShader compilation Log:\n" \
+                  + str(glGetShaderInfoLog(vert_shader)))
 
         frag_shader = glCreateShader(GL_FRAGMENT_SHADER)
         shader_file = open("simple3D.frag")
@@ -23,7 +24,8 @@ class Shader3D:
         glCompileShader(frag_shader)
         result = glGetShaderiv(frag_shader, GL_COMPILE_STATUS)
         if result != 1:  # shader didn't compile
-            print("Couldn't compile fragment shader\nShader compilation Log:\n" + str(glGetShaderInfoLog(frag_shader)))
+            print("Couldn't compile fragment shader\nShader compilation Log:\n" \
+                  + str(glGetShaderInfoLog(frag_shader)))
 
         self.renderingProgramID = glCreateProgram()
         glAttachShader(self.renderingProgramID, vert_shader)
@@ -37,10 +39,10 @@ class Shader3D:
         glEnableVertexAttribArray(self.normalLoc)
         self.textureLoc = glGetAttribLocation(self.renderingProgramID, "a_uv")
         glEnableVertexAttribArray(self.textureLoc)
-        
+
         # Eye position
         self.eyePosLoc = glGetUniformLocation(self.renderingProgramID, "u_eye_position")
-        
+
         # Player lantern light
         self.lightPosLoc       = glGetUniformLocation(self.renderingProgramID, "u_light_position")
         self.lightDiffuseLoc   = glGetUniformLocation(self.renderingProgramID, "u_light_color")
@@ -89,13 +91,12 @@ class Shader3D:
         except OpenGL.error.GLError:
             print(glGetProgramInfoLog(self.renderingProgramID))
             raise
-    
+
     def set_diffuse_texture(self, i):
         glUniform1i(self.diffuse_texture, i)
-        
+
     def set_specular_texture(self, i):
         glUniform1i(self.specular_texture, i)
-
 
     def set_model_matrix(self, matrix_array):
         glUniformMatrix4fv(self.modelMatrixLoc, 1, True, matrix_array)
@@ -124,7 +125,7 @@ class Shader3D:
 
     def set_light_diffuse(self, rgb):
         glUniform4f(self.lightDiffuseLoc, rgb.r, rgb.g, rgb.b, 1.0)
-    
+
     def set_light_attenuation_constant(self, f):
         glUniform1f(self.lightAttConstant, f)
 
@@ -178,7 +179,7 @@ class Shader3D:
 
     def set_material_emit(self, e):
         glUniform1f(self.materialEmit, e)
-    
+
     def set_fog_distance(self, f):
         glUniform1f(self.fogDistance, f)
 
@@ -188,7 +189,7 @@ class Shader3D:
     # Texture
     def set_use_texture(self, f):
         glUniform1f(self.useTexture, f)
-        
+
     # Mesh lab
     def set_attribute_buffers(self, vertex_buffer_id, has_texture=0):
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id)
@@ -205,7 +206,7 @@ class Shader3D:
 
     def set_material_diffuse(self, color):
         glUniform4f(self.materialDiffuseLoc, color.r, color.g, color.b, 1.0)
-    
+
     def set_material_specular(self, color):
         glUniform4f(self.materialSpecularLoc, color.r, color.g, color.b, 1.0)
 

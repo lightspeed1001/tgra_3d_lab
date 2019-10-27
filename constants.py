@@ -1,3 +1,4 @@
+#pylint: disable=all
 from math import pi, cos
 from Matrices import Point, Vector
 from Base3DObjects import Color
@@ -90,3 +91,7 @@ MAZE_DENSITY = 0.75
 MAZE_WALL_SIZE = 5
 MAZE_FLOOR_THICK = 0.5
 MAZE_GOAL_SIZE = 2
+
+DRAW_ANGLE_CUTOFF = cos((45 + 45) * pi/180)
+DRAW_ANGLE_MIN_DISTANCE = 6 ** 2
+DRAW_DISTANCE_CUTOFF_SQUARED = FOG_DISTANCE ** 2

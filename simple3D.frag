@@ -141,6 +141,7 @@ void main(void)
 		
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
+	gl_FragColor += calculate_player_flashlight();
 	// None of my materials have any emissions, but just in case
 	gl_FragColor += u_mat_diffuse * u_mat_emit;
 	if(u_fog > 0)
@@ -150,7 +151,4 @@ void main(void)
 		float len = max(min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 0.0);
 		gl_FragColor = vec4(gl_FragColor.rgb * min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 1);
 	}
-	// I wanted the flashlight to cut through the fog, just to see if I could.
-	// It works great.
-	gl_FragColor += calculate_player_flashlight();
 }

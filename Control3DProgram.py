@@ -1,12 +1,16 @@
+"""
+Lab excercises and more for Computer Graphics
+at Rekjavik University, winter 2019
+
+Author: Mikael Sigmundsson
+Teacher: Kári Halldórsson
+"""
 # from OpenGL.GL import *
 # from OpenGL.GLU import *
-from math import *
+# from math import *
 
 import pygame
 from pygame.locals import *
-
-import sys
-import time
 
 from Shaders import *
 from Matrices import *
@@ -15,6 +19,7 @@ from gameobject import *
 from constants import *
 
 class GraphicsProgram3D:
+    """ The main game """
     def __init__(self):
         """ Things that don't change between restarts """
         # Pygame
@@ -49,20 +54,32 @@ class GraphicsProgram3D:
         # self.tex_id_01_specular = self.load_texture("Brick_Wall_011_OCC.jpg")
         self.tex_id_01_specular = self.load_texture("container2_specular.png")
         # self.tex_id2 = self.load_texture("container2.png")
-        print("Texture id diffuse: {}\nTexture id specular: {}".format(self.tex_id_01_diffuse, self.tex_id_01_specular))
+        print("Texture id diffuse: {}\nTexture id specular: {}"
+              .format(self.tex_id_01_diffuse, self.tex_id_01_specular))
+
+        # Things to make pylint happy
+        self.project_matrix = None
+        self.view_matrix = None
+        self.floor = None
+        self.ceiling = None
+        self.maze = None
+        self.chunks = None
+        self.goal = None
+        self.player = None
 
     def load_texture(self, image):
-        textureSurface = pygame.image.load(image)
-        textureData = pygame.image.tostring(textureSurface, "RGBA", 1)
-        width = textureSurface.get_width()
-        height = textureSurface.get_height()
+        """ Loads a texture into the buffer """
+        texture_surface = pygame.image.load(image)
+        texture_data = pygame.image.tostring(texture_surface, "RGBA", 1)
+        width = texture_surface.get_width()
+        height = texture_surface.get_height()
 
         # glEnable(GL_TEXTURE_2D)
         texid = glGenTextures(1)
 
         glBindTexture(GL_TEXTURE_2D, texid)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
-                    0, GL_RGBA, GL_UNSIGNED_BYTE, textureData)
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
 
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
@@ -72,35 +89,40 @@ class GraphicsProgram3D:
         return texid
 
     def update(self):
+        """ Performs any per-frame updates """
         delta_time = self.clock.tick() / 1000.0
         self.fps_print += delta_time
 
         self.handle_input(pygame.key.get_pressed(), delta_time)
         # self.view_matrix.eye.y -= DEFAULT_GRAVITY * delta_time
 
-        if self.player.collision_check(self.floor):
-            pass
+        # if self.player.collision_check(self.floor):
+        #     pass
 
+        self.player.update_bounding_box()
         # Check for collisions
         for cube in self.chunks:
             if self.player.collision_check(cube):
                 pass
 
-        if self.goal.collision_check(self.player):
+        #if self.goal.collision_check(self.player):
+        if self.player.collision_check(self.goal):
             print("You solved the maze!\nGenerating new maze!")
             self.new_game()
-        if(self.fps_print >= 1):
+        if self.fps_print >= 1:
             print(self.clock.get_fps())
+            # print(self.player.collision_poly)
             self.fps_print = 0.0
 
-
     def display(self):
+        """ Draws the game world """
         # Draw boilerplate
-        glEnable(GL_DEPTH_TEST)  ### --- NEED THIS FOR NORMAL 3D BUT MANY EFFECTS BETTER WITH glDisable(GL_DEPTH_TEST) ... try it! --- ###
+        glEnable(GL_DEPTH_TEST)
         glEnable(GL_FRAMEBUFFER_SRGB)
+        glCullFace(GL_FRONT)
         # Enable AA
         glEnable(GL_MULTISAMPLE)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  ### --- YOU CAN ALSO CLEAR ONLY THE COLOR OR ONLY THE DEPTH --- ###
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
         # Refresh the view matrix (movement)
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
@@ -108,42 +130,55 @@ class GraphicsProgram3D:
         # Refresh the projection matrix (FOV changes)
         # self.project_matrix.set_perspective(self.fov, 800.0/600.0, 0.5, 10)
         # self.shader.set_projection_matrix(self.project_matrix.get_matrix())
-        
+
         # Lights
         # Player lantern
         self.shader.set_light_position(self.view_matrix.eye)
-        
+
         # Flashlight
-        flashy_position = Point(self.view_matrix.eye.x, self.view_matrix.eye.y * 0.7, self.view_matrix.eye.z)
+        flashy_position = Point(self.view_matrix.eye.x,
+                                self.view_matrix.eye.y * 0.7,
+                                self.view_matrix.eye.z)
         self.shader.set_flashlight_position(flashy_position)
-        self.shader.set_flashlight_direction(self.view_matrix.n) # n is back, so that works out perfectly
+        self.shader.set_flashlight_direction(self.view_matrix.n)
 
         # Zero out model matrix, just in case
         self.model_matrix.load_identity()
-        
+
         # Cube drawing mode
         self.cube.set_vertices(self.shader)
-        
+
         # Draw the maze
         glEnable(GL_TEXTURE_2D)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.tex_id_01_diffuse)
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.tex_id_01_specular)
-        
+
+        forward = Vector(self.view_matrix.n.x, self.view_matrix.n.y, self.view_matrix.n.z)
+        # forward.normalize()
         self.shader.set_use_texture(1.0)
         self.shader.set_material_diffuse(COLOR_WALL)
         self.shader.set_material_specular(SPECULAR_WALL)
         self.shader.set_material_shiny(SHINY_WALL)
         self.shader.set_material_emit(EMIT_WALL)
         for cube in self.chunks:
+            obj_dir = self.view_matrix.eye - cube.position
+            # obj_dir.normalize()
+            theta = obj_dir.dot(forward)
+            dist_squared = obj_dir.length_squared()
+            if theta - DRAW_ANGLE_CUTOFF <= 0 and \
+                dist_squared > DRAW_ANGLE_MIN_DISTANCE \
+                or dist_squared > DRAW_DISTANCE_CUTOFF_SQUARED:
+                continue
+
             self.model_matrix.push_matrix()
-            
-            self.model_matrix.add_movement(position = cube.position)
+
+            self.model_matrix.add_movement(position=cube.position)
             self.model_matrix.add_scale(cube.scale.x) # The walls are perfect cubes
             self.shader.set_model_matrix(self.model_matrix.matrix)
             self.cube.draw(self.shader)
-            
+
             self.model_matrix.pop_matrix()
         self.shader.set_use_texture(0.0)
         glDisable(GL_TEXTURE_2D)
@@ -153,7 +188,7 @@ class GraphicsProgram3D:
         # glEnable(GL_TEXTURE_2D)
         # glBindTexture(GL_TEXTURE_2D, self.tex_id2)
         # self.shader.set_use_texture(1.0)
-        
+
         self.model_matrix.push_matrix()
         self.shader.set_material_diffuse(COLOR_FLOOR)
         self.shader.set_material_shiny(SHINY_FLOOR)
@@ -170,7 +205,7 @@ class GraphicsProgram3D:
         # self.shader.set_use_texture(0.0)
         # glDisable(GL_TEXTURE_2D)
         # glBindTexture(GL_TEXTURE_2D, -1)
-        
+
         # Draw the ceiling
         self.model_matrix.push_matrix()
         self.shader.set_material_diffuse(COLOR_CEILING)
@@ -196,8 +231,8 @@ class GraphicsProgram3D:
         self.shader.set_material_specular(SPECULAR_GOAL)
         self.shader.set_material_shiny(SHINY_GOAL)
         self.shader.set_material_emit(EMIT_GOAL)
-        
-        self.model_matrix.add_movement(position = self.goal.position)
+
+        self.model_matrix.add_movement(position=self.goal.position)
         self.model_matrix.add_scale(self.goal.scale.x)
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.sphere.draw(self.shader)
@@ -207,46 +242,48 @@ class GraphicsProgram3D:
         pygame.display.flip()
 
     def handle_input(self, keys, delta_time):
-        WASD_SPEED = PLAYER_MOVE_SPEED * delta_time
-        OTHER_SPEED = PLAYER_TURN_SPEED * delta_time
-        FOV_DELTA = PLAYER_FOV_SPEED * delta_time
-        
+        """ Handles any input from the keyboard """
+        wasd_speed = PLAYER_MOVE_SPEED * delta_time
+        other_speed = PLAYER_TURN_SPEED * delta_time
+        # fov_delta = PLAYER_FOV_SPEED * delta_time
+
         if keys[K_d]:
-            self.view_matrix.slide(WASD_SPEED, 0, 0)
+            self.view_matrix.slide(wasd_speed, 0, 0)
         if keys[K_a]:
-            self.view_matrix.slide(-WASD_SPEED, 0, 0)
+            self.view_matrix.slide(-wasd_speed, 0, 0)
 
         if keys[K_s]:
-            self.view_matrix.slide(0, 0, WASD_SPEED)
+            self.view_matrix.slide(0, 0, wasd_speed)
         if keys[K_w]:
-            self.view_matrix.slide(0, 0, -WASD_SPEED)
+            self.view_matrix.slide(0, 0, -wasd_speed)
 
         if keys[K_LEFT]:
-            self.view_matrix.yaw(OTHER_SPEED)
+            self.view_matrix.yaw(other_speed)
         if keys[K_RIGHT]:
-            self.view_matrix.yaw(-OTHER_SPEED)
+            self.view_matrix.yaw(-other_speed)
 
         # if keys[K_e]:
-        #     self.view_matrix.roll(-OTHER_SPEED)
+        #     self.view_matrix.roll(-other_speed)
         # if keys[K_q]:
-        #     self.view_matrix.roll(OTHER_SPEED)
+        #     self.view_matrix.roll(other_speed)
 
         if keys[K_DOWN]:
-            self.view_matrix.pitch(OTHER_SPEED)
+            self.view_matrix.pitch(other_speed)
         if keys[K_UP]:
-            self.view_matrix.pitch(-OTHER_SPEED)
+            self.view_matrix.pitch(-other_speed)
 
         # if keys[K_r]:
-        #     self.view_matrix.slide(0, WASD_SPEED, 0)
+        #     self.view_matrix.slide(0, wasd_speed, 0)
         # if keys[K_f]:
-        #     self.view_matrix.slide(0, -WASD_SPEED, 0)
+        #     self.view_matrix.slide(0, -wasd_speed, 0)
 
-        if keys[K_g]:
-            self.fov += FOV_DELTA
-        if keys[K_t]:
-            self.fov -= FOV_DELTA
+        # if keys[K_g]:
+        #     self.fov += fov_delta
+        # if keys[K_t]:
+        #     self.fov -= fov_delta
 
     def program_loop(self):
+        """ Runs the game forever-ish """
         exiting = False
         while not exiting:
 
@@ -266,17 +303,20 @@ class GraphicsProgram3D:
         pygame.quit()
 
     def setup_camera(self):
+        """ Does any setup required for the camera """
         self.project_matrix = ProjectionMatrix()
-        self.project_matrix.set_perspective(self.fov, WINDOW_WIDTH/WINDOW_HEIGHT, DEFAULT_NEAR, DEFAULT_FAR)
+        self.project_matrix.set_perspective(self.fov, WINDOW_WIDTH/WINDOW_HEIGHT,
+                                            DEFAULT_NEAR, DEFAULT_FAR)
         self.view_matrix = FPSViewMatrix()
         eye_start = Point(PLAYER_STARTING_POS.x, PLAYER_STARTING_POS.y, PLAYER_STARTING_POS.z)
         eye_look = Point(PLAYER_STARTING_LOOK.x, PLAYER_STARTING_LOOK.y, PLAYER_STARTING_LOOK.z)
         self.view_matrix.look(eye_start, eye_look, VECTOR_UP)
         self.shader.set_projection_matrix(self.project_matrix.get_matrix())
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
-        
+
 
     def setup_lights(self):
+        """ Sets up the lights """
         # Global directional light
         self.shader.set_global_light_direction(GLOBAL_LIGHT_DIRECTION)
         self.shader.set_global_light_color(GLOBAL_LIGHT_COLOR)
@@ -297,6 +337,7 @@ class GraphicsProgram3D:
         self.shader.set_fog_color(FOG_COLOR)
 
     def setup_maze(self):
+        """ Sets up the maze """
         w = MAZE_WIDTH
         h = MAZE_HEIGHT
         assert w & 1, "Width isn't odd!"
@@ -308,12 +349,12 @@ class GraphicsProgram3D:
         floor_size_z = wall_scale * w
         floor_size_y = MAZE_FLOOR_THICK
 
-        floor_pos = Point(floor_size_x / 2 - wall_scale / 2, 
-                          -wall_scale / 2 - floor_size_y / 2, 
+        floor_pos = Point(floor_size_x / 2 - wall_scale / 2,
+                          -wall_scale / 2 - floor_size_y / 2,
                           floor_size_z / 2 - wall_scale / 2)
         floor_scale = Point(floor_size_x, floor_size_y, floor_size_z)
         self.floor = Wall(floor_pos, floor_scale)
-        
+
         # Ceiling setup
         ceiling_pos = floor_pos + Point(0, wall_scale + floor_size_y, 0)
         self.ceiling = Wall(ceiling_pos, floor_scale)
@@ -330,26 +371,30 @@ class GraphicsProgram3D:
                     y = 0
                     z = col_num * wall_scale
                     self.chunks.append(Wall(Point(x, y, z), wall_scale_p))
-        
+
         # Goal setup
         # It's theoretically possible for the goal to end up inside a wall,
         # but it's unlikely.
         goal_x = (w-2) * wall_scale
         goal_y = 0
         goal_z = (h-2) * wall_scale
-        goal_scale = Point(MAZE_GOAL_SIZE,MAZE_GOAL_SIZE,MAZE_GOAL_SIZE)
+        goal_scale = Point(MAZE_GOAL_SIZE, MAZE_GOAL_SIZE, MAZE_GOAL_SIZE)
         self.goal = Trigger(Point(goal_x, goal_y, goal_z), goal_scale)
 
     def setup_player(self):
-        self.player = Player(self.view_matrix.eye, Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
+        """ Sets up the player """
+        self.player = Player(self.view_matrix.eye,
+                             Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
 
     def new_game(self):
+        """ Wrapper for all the setup functions """
         self.setup_camera()
         self.setup_lights()
         self.setup_maze()
         self.setup_player()
 
     def start(self):
+        """ Starts a brand new game. Don't call this twice. """
         self.new_game()
         glClearColor(COLOR_BG.r, COLOR_BG.b, COLOR_BG.g, 1.0)
         self.program_loop()

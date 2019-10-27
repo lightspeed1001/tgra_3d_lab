@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "e:\\Programming\\hr\\tgraf\\tgra_3d_lab\\.venv\\Scripts\\python.exe",
+    "python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=lxml",  // The extension is "lxml" not "1xml"
+        "--unsafe-load-any-extension=y",
+        "--disable=invalid-name,wildcard-import,unused-wildcard-import"
+    ]
+    
+}
