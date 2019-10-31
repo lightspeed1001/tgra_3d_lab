@@ -1,14 +1,14 @@
-import random
+""" A few basic objects and math stuff """
 from random import *
+from math import sqrt, pi, cos, sin
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-import math
-from math import *
 
 import numpy as np
 
+#pylint: disable=bad-whitespace,missing-docstring
 
 class Point:
     def __init__(self, x, y, z):
@@ -21,7 +21,7 @@ class Point:
 
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
-        
+
     def __str__(self):
         return "({}, {}, {})".format(self.x, self.y, self.z)
 
@@ -73,9 +73,9 @@ class Color:
 
 class Material:
     def __init__(self, diffuse = None, specular = None, shininess = None):
-        self.diffuse = Color(0.0, 0.0, 0.0) if diffuse == None else diffuse
-        self.specular = Color(0.0, 0.0, 0.0) if specular == None else specular
-        self.shininess = 1 if shininess == None else shininess
+        self.diffuse = Color(0.0, 0.0, 0.0) if diffuse is None else diffuse
+        self.specular = Color(0.0, 0.0, 0.0) if specular is None else specular
+        self.shininess = 1 if shininess is None else shininess
 
 
 class MeshModel:
@@ -99,7 +99,7 @@ class MeshModel:
 
     def add_material(self, mat_id, mat):
         self.materials[mat_id] = mat
-    
+
     def set_opengl_buffers(self):
         for mesh_id in self.mesh_materials.keys():
             self.vertex_buffer_ids[mesh_id] = glGenBuffers(1)
@@ -207,7 +207,7 @@ class Cube:
         shader.set_normal_attribute(self.normal_array)
         shader.set_texture_attribute(self.texture_array)
 
-    def draw(self, shader):
+    def draw(self):
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4)
         glDrawArrays(GL_TRIANGLE_FAN, 4, 4)
         glDrawArrays(GL_TRIANGLE_FAN, 8, 4)
@@ -222,37 +222,44 @@ class OptiCube:
             -0.5, -0.5, -0.5,  0.0,  0.0, -1.0, 0, 0,
             -0.5,  0.5, -0.5,  0.0,  0.0, -1.0, 0, 1,
              0.5,  0.5, -0.5,  0.0,  0.0, -1.0, 1, 1,
-             0.5, -0.5, -0.5,  0.0,  0.0, -1.0, 1, 0,
+             0.5, -0.5, -0.5,  0.0,  0.0, -1.0, 1, 0,   # LEFT
+
             -0.5, -0.5,  0.5,  0.0,  0.0,  1.0, 0, 0,
-            -0.5,  0.5,  0.5,  0.0,  0.0,  1.0, 0, 1,
-             0.5,  0.5,  0.5,  0.0,  0.0,  1.0, 1, 1,
              0.5, -0.5,  0.5,  0.0,  0.0,  1.0, 1, 0,
+             0.5,  0.5,  0.5,  0.0,  0.0,  1.0, 1, 1,
+            -0.5,  0.5,  0.5,  0.0,  0.0,  1.0, 0, 1,   # RIGHT
+
             -0.5, -0.5, -0.5,  0.0, -1.0,  0.0, 0, 0,
-             0.5, -0.5, -0.5,  0.0, -1.0,  0.0, 0, 1,
+             0.5, -0.5, -0.5,  0.0, -1.0,  0.0, 1, 0,
              0.5, -0.5,  0.5,  0.0, -1.0,  0.0, 1, 1,
-            -0.5, -0.5,  0.5,  0.0, -1.0,  0.0, 1, 0,
-            -0.5,  0.5, -0.5,  0.0,  1.0,  0.0, 0, 0,
-             0.5,  0.5, -0.5,  0.0,  1.0,  0.0, 0, 1,
-             0.5,  0.5,  0.5,  0.0,  1.0,  0.0, 1, 1,
-            -0.5,  0.5,  0.5,  0.0,  1.0,  0.0, 1, 0,
-            -0.5, -0.5, -0.5, -1.0,  0.0,  0.0, 0, 0,
-            -0.5, -0.5,  0.5, -1.0,  0.0,  0.0, 0, 1,
-            -0.5,  0.5,  0.5, -1.0,  0.0,  0.0, 1, 1,
-            -0.5,  0.5, -0.5, -1.0,  0.0,  0.0, 1, 0,
-             0.5, -0.5, -0.5,  1.0,  0.0,  0.0, 0, 0,
-             0.5, -0.5,  0.5,  1.0,  0.0,  0.0, 0, 1,
+            -0.5, -0.5,  0.5,  0.0, -1.0,  0.0, 0, 1,   # Top or bottom
+
+            -0.5,  0.5,  0.5,  0.0,  1.0,  0.0, 0, 0,
+             0.5,  0.5,  0.5,  0.0,  1.0,  0.0, 1, 0,
+             0.5,  0.5, -0.5,  0.0,  1.0,  0.0, 1, 1,
+            -0.5,  0.5, -0.5,  0.0,  1.0,  0.0, 0, 1,   # Top or bottom
+
+            -0.5, -0.5, -0.5, -1.0,  0.0,  0.0, 1, 0,
+            -0.5, -0.5,  0.5, -1.0,  0.0,  0.0, 0, 0,
+            -0.5,  0.5,  0.5, -1.0,  0.0,  0.0, 0, 1,
+            -0.5,  0.5, -0.5, -1.0,  0.0,  0.0, 1, 1,   # FRONT
+
+             0.5,  0.5, -0.5,  1.0,  0.0,  0.0, 0, 1,
              0.5,  0.5,  0.5,  1.0,  0.0,  0.0, 1, 1,
-             0.5,  0.5, -0.5,  1.0,  0.0,  0.0, 1, 0
+             0.5, -0.5,  0.5,  1.0,  0.0,  0.0, 1, 0,
+             0.5, -0.5, -0.5,  1.0,  0.0,  0.0, 0, 0,   # BACK
         ]
         self.vertex_buffer_id = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer_id)
         glBufferData(GL_ARRAY_BUFFER, np.array(vertex_array, dtype="float32"), GL_STATIC_DRAW)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-        
+
     def set_vertices(self, shader):
         shader.set_attribute_buffers(self.vertex_buffer_id, 1)
 
-    def draw(self, shader):
+    def draw(self):
+        """ Does NOT set the drawing mode!
+        Please remember to set_vertices before drawing a large amount of cubes. """
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4)
         glDrawArrays(GL_TRIANGLE_FAN, 4, 4)
         glDrawArrays(GL_TRIANGLE_FAN, 8, 4)
@@ -281,14 +288,14 @@ class Sphere:
                 self.vertex_array.append(sin(stack_angle + stack_interval) * cos(slice_angle))
                 self.vertex_array.append(cos(stack_angle + stack_interval))
                 self.vertex_array.append(sin(stack_angle + stack_interval) * sin(slice_angle))
-                
+
                 self.vertex_count += 2
 
     def set_verties(self, shader):
         shader.set_position_attribute(self.vertex_array)
         shader.set_normal_attribute(self.vertex_array)
-    
-    def draw(self, shader):
+
+    def draw(self):
         for i in range(0, self.vertex_count, (self.slices + 1) * 2):
             glDrawArrays(GL_TRIANGLE_STRIP, i, (self.slices + 1) * 2)
 
@@ -324,6 +331,7 @@ class OptiSphere:
         vertex_array = None
 
     def draw(self, shader):
+        """ Sets the drawing mode and draws the sphere """
         shader.set_attribute_buffers(self.vertex_buffer_id)
         for i in range(0, self.vertex_count, (self.slices + 1) * 2):
             glDrawArrays(GL_TRIANGLE_STRIP, i, (self.slices + 1) * 2)

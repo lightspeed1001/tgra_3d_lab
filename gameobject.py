@@ -53,16 +53,17 @@ class Player(GameObject):
 
             if w >= abs(h):
                 self.position.x = other.min_x - self.scale.x / 2
-                return
-            if -w >= abs(h):
+                # return True
+            elif -w >= abs(h):
                 self.position.x = other.max_x + self.scale.x / 2
-                return
-            if h >= abs(w):
+                # return True
+            elif h >= abs(w):
                 self.position.z = other.min_z - self.scale.z / 2
-                return
-            if -h >= abs(w):
+                # return True
+            elif -h >= abs(w):
                 self.position.z = other.max_z + self.scale.z / 2
-                return
+            return True
+        return False
 
     def sphere_intersects(self, other):
         """ Self is a sphere. Check for intersection using radius """
@@ -92,11 +93,6 @@ class Enemy(GameObject):
 
 class Wall(GameObject):
     """ A very basic wall object. """
-    def __init__(self, position: Point, scale: Point = Point(1, 1, 1),
-                 rotation: Point = None, friction=0.0):
-        super().__init__(position, scale, rotation, friction)
-        # if 10 >= self.position.x >= 0 and 10 >= self.position.z >= 0:
-        #     print(self.collision_poly)
 
 class Trigger(GameObject):
     """ An invisible trigger object """

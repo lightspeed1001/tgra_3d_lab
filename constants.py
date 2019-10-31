@@ -6,7 +6,10 @@ from Base3DObjects import Color
 # Cheats
 JUMP = False # Not implemented
 WALLHACK = False # Not implemented
+RESET_BUTTON = True
 ALLOW_UP_DOWN_LOOK = False
+ENABLE_GRAVITY = False
+DEBUG_MODE = True
 
 # Window
 WINDOW_HEIGHT = 600
@@ -31,6 +34,7 @@ COLOR_ENEMY   = Color(0.9, 0.05, 0.05)
 COLOR_BG      = Color(0.0, 0.0, 0.0)
 COLOR_GOAL    = Color(0.05, 0.05, 0.9)
 COLOR_CEILING = Color(0.5, 0.0, 0.0)
+COLOR_PICKUP  = Color(1.0, 0.65, 0.1)
 
 # Specular
 SPECULAR_PLAYER  = Color(0.5, 0.5, 0.5)
@@ -39,14 +43,16 @@ SPECULAR_FLOOR   = Color(0.5, 0.5, 0.5)
 SPECULAR_ENEMY   = Color(0.5, 0.5, 0.5)
 SPECULAR_GOAL    = Color(0.1, 0.1, 0.1)
 SPECULAR_CEILING = Color(0.5, 0.5, 0.5)
+SPECULAR_PICKUP  = Color(1.0, 1.0, 1.0)
 
 # Shiny
-SHINY_PLAYER = 10
-SHINY_WALL   = 10
-SHINY_FLOOR  = 10
-SHINY_ENEMY  = 10
-SHINY_GOAL   = 250
+SHINY_PLAYER  = 10
+SHINY_WALL    = 10
+SHINY_FLOOR   = 10
+SHINY_ENEMY   = 10
+SHINY_GOAL    = 250
 SHINY_CEILING = 500
+SHINY_PICKUP  = 1000
 
 # Emit
 EMIT_PLAYER = 0.0
@@ -55,11 +61,12 @@ EMIT_FLOOR = 0.0
 EMIT_ENEMY = 0.0
 EMIT_GOAL = 0.5
 EMIT_CEILING = 0.0
+EMIT_PICKUP = 0.4
 
 # Game Settings
 DEFAULT_GRAVITY = 0.0
 PLAYER_MOVE_SPEED = 12.0
-PLAYER_TURN_SPEED = 100.0
+PLAYER_TURN_SPEED = 180.0
 PLAYER_FOV_SPEED  = 0.25
 
 # Lights
@@ -84,15 +91,16 @@ FOG_COLOR = Color(0.1, 0.1, 0.1)
 
 # Maze
 # Minimum size is 5x5 and only odd numbers allowed
-# There is no maximum, but above 25 you'll run into severe performance issues
-MAZE_WIDTH  = 51
-MAZE_HEIGHT = 51
+# There is no maximum, but above 150 you'll run into severe performance issues
+MAZE_WIDTH  = 11
+MAZE_HEIGHT = 11
 MAZE_COMPLEXITY = 0.75
 MAZE_DENSITY = 0.75
 MAZE_WALL_SIZE = 5
 MAZE_FLOOR_THICK = 0.5
 MAZE_GOAL_SIZE = 2
 
-DRAW_ANGLE_CUTOFF = cos((45 + 45) * pi/180)
-DRAW_ANGLE_MIN_DISTANCE = 6 ** 2
+# Very tight angle, since the maze is rather tight
+DRAW_ANGLE_CUTOFF = cos((45) * pi/180)
+DRAW_ANGLE_MIN_DISTANCE = 10 ** 2
 DRAW_DISTANCE_CUTOFF_SQUARED = FOG_DISTANCE ** 2

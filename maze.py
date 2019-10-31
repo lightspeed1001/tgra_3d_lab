@@ -1,12 +1,18 @@
+"""
+Basic block maze generator found online
+https://en.wikipedia.org/wiki/Maze_generation_algorithm#Python_code_example
+"""
+
 import numpy
 from numpy.random import randint as rand
-
+#pylint: disable=all
 class Maze:
     def __init__(self, w=81, h=51, complexity=.75, density=.75):
         self.width = w
         self.height = h
         self.complexity = complexity
         self.density = density
+        self.maze = None
 
     def generate_maze(self):
         # Only odd shapes
@@ -20,10 +26,10 @@ class Maze:
         Z[0, :] = Z[-1, :] = 1
         Z[:, 0] = Z[:, -1] = 1
         # Make aisles
-        for i in range(density):
+        for _ in range(density):
             x, y = rand(0, shape[1] // 2) * 2, rand(0, shape[0] // 2) * 2 # pick a random position
             Z[y, x] = 1
-            for j in range(complexity):
+            for _ in range(complexity):
                 neighbours = []
                 if x > 1:             neighbours.append((y, x - 2))
                 if x < shape[1] - 2:  neighbours.append((y, x + 2))
