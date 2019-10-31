@@ -133,12 +133,14 @@ void main(void)
 {   
 	// I decided to break the main function into multiple
     // sub functions, since it makes for much more readable code.
+	float opacity = 1.0;
 	if(u_use_texture)
 	{
 		u_mat_diffuse = texture2D(u_tex_diffuse, v_uv);
 		u_mat_specular = texture2D(u_tex_specular, v_uv);
+		opacity = 1-u_mat_diffuse.r;
 	}
-		
+	
 	gl_FragColor = calculate_directional_light();
 	gl_FragColor += calculate_player_light();
 	gl_FragColor += calculate_player_flashlight();
@@ -151,4 +153,5 @@ void main(void)
 		float len = max(min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 0.0);
 		gl_FragColor = vec4(gl_FragColor.rgb * min(1 - length(v_position - u_eye_position) / u_fog, 1.0), 1);
 	}
+	gl_FragColor.a = opacity;
 }

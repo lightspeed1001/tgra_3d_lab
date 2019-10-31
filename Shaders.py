@@ -83,7 +83,6 @@ class Shader3D:
         self.useTexture = glGetUniformLocation(self.renderingProgramID, "u_use_texture")
         self.diffuse_texture = glGetUniformLocation(self.renderingProgramID, "u_tex_diffuse")
         self.specular_texture = glGetUniformLocation(self.renderingProgramID, "u_tex_specular")
-        # glUniform
 
     def use(self):
         try:

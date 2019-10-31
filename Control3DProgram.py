@@ -44,18 +44,20 @@ class GraphicsProgram3D:
         self.clock.tick()
         self.fps_print = 0.0
 
-        # Texture
-        # glActiveTexture(GL_TEXTURE0)
+        # Textures
+        # Walls and floors from https://opengameart.org/content/pietextureset
         self.shader.set_diffuse_texture(0)
-        # self.tex_id_01_diffuse = self.load_texture("container2.jpg")
-        self.tex_id_01_diffuse = self.load_texture("./textures/Brick_Wall_011_COLOR.jpg")
+        self.tex_id_wall_diffuse = self.load_texture("./textures/rustytiles/rustytiles01_diff.png")
+
         self.shader.set_specular_texture(1)
-        # glActiveTexture(GL_TEXTURE1)
-        self.tex_id_01_specular = self.load_texture("./textures/Brick_Wall_011_OCC.jpg")
-        # self.tex_id_01_specular = self.load_texture("container2_specular.png")
-        # self.tex_id2 = self.load_texture("container2.png")
-        # print("Texture id diffuse: {}\nTexture id specular: {}"
-        #       .format(self.tex_id_01_diffuse, self.tex_id_01_specular))
+        self.tex_id_wall_specular = self.load_texture("./textures/rustytiles/rustytiles01_spec.png")
+
+        self.tex_id_goal_diffuse  = self.load_texture("./textures/concrete_stone/concrete01_diff.png")
+        self.tex_id_goal_specular = self.load_texture("./textures/concrete_stone/concrete01_spec.png")
+
+        # Lava from https://opengameart.org/content/hand-painted-texture-rocks-on-lava
+        self.tex_id_lava_diffuse  = self.load_texture("./textures/lava_rock/LavaRockTexture.png")
+        self.tex_id_lava_specular = self.load_texture("./textures/lava_rock/LavaRockTexture_SPEC.png")
 
         # Things to make pylint happy
         self.project_matrix = None
@@ -69,6 +71,16 @@ class GraphicsProgram3D:
         self.walls_by_x = None
         self.walls_by_z = None
         self.pickups = None
+        self.angle = 0
+        # https://freesound.org/people/ProjectsU012/sounds/341695/
+        self.pickup_sound = pygame.mixer.Sound(file="./sounds/coin_pickup2.wav")
+        # https://freesound.org/people/PearceWilsonKing/sounds/249524/
+        self.fanfare_sound = pygame.mixer.Sound(file="./sounds/fanfare.wav")
+        # https://freesound.org/people/mad-monkey/sounds/66690/
+        self.go_to_exit_sound = pygame.mixer.Sound(file="./sounds/find_exit.wav")
+        # https://www.newgrounds.com/audio/listen/338552
+        self.music = pygame.mixer.music.load("./sounds/music.mp3")
+
 
     def load_texture(self, image):
         """ Loads a texture into the buffer """
@@ -94,7 +106,7 @@ class GraphicsProgram3D:
     def update(self):
         """ Performs any per-frame updates """
         delta_time = self.clock.tick() / 1000.0
-
+        self.angle += delta_time/2
         self.handle_input(pygame.key.get_pressed(), delta_time)
 
         # Required for AABB check in collision
@@ -126,6 +138,10 @@ class GraphicsProgram3D:
         # Delete pickups that were found
         for i in reversed(pickups_to_kill):
             self.pickups.remove(self.pickups[i])
+            if len(self.pickups) == 0:
+                self.go_to_exit_sound.play()
+            else:
+                self.pickup_sound.play()
             if DEBUG_MODE:
                 print("Shinies remaining: {}".format(len(self.pickups)))
                 if len(self.pickups) == 0:
@@ -135,6 +151,7 @@ class GraphicsProgram3D:
         if self.goal.collision_check(self.player) and len(self.pickups) == 0:
             if DEBUG_MODE:
                 print("You solved the maze!\nGenerating new maze!")
+            self.fanfare_sound.play()
             self.new_game()
 
         # Print some debug info sometimes
@@ -168,15 +185,14 @@ class GraphicsProgram3D:
         """ Draws all the walls in the maze """
         glCullFace(GL_BACK)
 
-        # Draw the maze
         glEnable(GL_TEXTURE_2D)
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self.tex_id_01_diffuse)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_wall_diffuse)
         glActiveTexture(GL_TEXTURE1)
-        glBindTexture(GL_TEXTURE_2D, self.tex_id_01_specular)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_wall_specular)
 
         forward = Vector(self.view_matrix.n.x, self.view_matrix.n.y, self.view_matrix.n.z)
-        # forward.normalize()
+
         self.shader.set_use_texture(1.0)
         self.shader.set_material_diffuse(COLOR_WALL)
         self.shader.set_material_specular(SPECULAR_WALL)
@@ -206,8 +222,16 @@ class GraphicsProgram3D:
 
     def draw_maze_pickups(self):
         """ Draw all the pickups in the maze """
-        # TODO Add texture
         glCullFace(GL_FRONT)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_TEXTURE_2D)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_lava_diffuse)
+        glActiveTexture(GL_TEXTURE1)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_lava_specular)
+        self.shader.set_use_texture(1.0)
+
         forward = Vector(self.view_matrix.n.x, self.view_matrix.n.y, self.view_matrix.n.z)
         for pickup in self.pickups:
             obj_dir = self.view_matrix.eye - pickup.position
@@ -227,15 +251,19 @@ class GraphicsProgram3D:
 
             self.model_matrix.add_movement(position=pickup.position)
             self.model_matrix.add_scale(pickup.scale.x)
+            self.model_matrix.add_y_rotation(self.angle)
             self.shader.set_model_matrix(self.model_matrix.matrix)
             self.sphere.draw(self.shader)
 
             self.model_matrix.pop_matrix()
 
+        glDisable(GL_TEXTURE_2D)
+        glDisable(GL_BLEND)
+        glBindTexture(GL_TEXTURE_2D, -1)
+        self.shader.set_use_texture(0.0)
+
     def draw_maze_floor(self):
         """ Draws the maze floor """
-        # TODO Add texture
-        # Draw the floor
         glCullFace(GL_BACK)
         self.model_matrix.push_matrix()
         self.shader.set_material_diffuse(COLOR_FLOOR)
@@ -252,8 +280,14 @@ class GraphicsProgram3D:
 
     def draw_maze_goal(self):
         """ Draws the maze goal """
-        # TODO Add texture
         glCullFace(GL_FRONT)
+        glEnable(GL_TEXTURE_2D)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_goal_diffuse)
+        glActiveTexture(GL_TEXTURE1)
+        glBindTexture(GL_TEXTURE_2D, self.tex_id_goal_specular)
+        self.shader.set_use_texture(1.0)
+
         self.model_matrix.push_matrix()
 
         self.shader.set_material_diffuse(COLOR_GOAL)
@@ -263,15 +297,16 @@ class GraphicsProgram3D:
 
         self.model_matrix.add_movement(position=self.goal.position)
         self.model_matrix.add_scale(self.goal.scale.x)
+        self.model_matrix.add_y_rotation(self.angle / 2)
         self.shader.set_model_matrix(self.model_matrix.matrix)
         self.sphere.draw(self.shader)
 
         self.model_matrix.pop_matrix()
+        glBindTexture(GL_TEXTURE_2D, -1)
+        self.shader.set_use_texture(0.0)
 
     def draw_maze_ceiling(self):
         """ Draws the ceilint of the maze """
-        # TODO Add texture
-        # Draw the ceiling
         self.model_matrix.push_matrix()
         self.shader.set_material_diffuse(COLOR_CEILING)
         self.shader.set_material_shiny(SHINY_CEILING)
@@ -400,8 +435,8 @@ class GraphicsProgram3D:
     def program_loop(self):
         """ Runs the game forever-ish """
         exiting = False
+        pygame.mixer.music.play()
         while not exiting:
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     print("Quitting!")
@@ -424,9 +459,9 @@ class GraphicsProgram3D:
         self.project_matrix.set_perspective(self.fov, WINDOW_WIDTH/WINDOW_HEIGHT,
                                             DEFAULT_NEAR, DEFAULT_FAR)
         self.view_matrix = FPSViewMatrix()
-        eye_start = Point(PLAYER_STARTING_POS.x, PLAYER_STARTING_POS.y, PLAYER_STARTING_POS.z)
+        # eye_start = Point(self.player.position.x, self.player.position.y, self.player.position.z)
         eye_look = Point(PLAYER_STARTING_LOOK.x, PLAYER_STARTING_LOOK.y, PLAYER_STARTING_LOOK.z)
-        self.view_matrix.look(eye_start, eye_look, VECTOR_UP)
+        self.view_matrix.look(self.player.position, eye_look, VECTOR_UP)
         self.shader.set_projection_matrix(self.project_matrix.get_matrix())
         self.shader.set_view_matrix(self.view_matrix.get_matrix())
 
@@ -456,8 +491,7 @@ class GraphicsProgram3D:
         """ Sets up the maze """
         if DEBUG_MODE:
             print("Generating a brand new maze...")
-        # w = MAZE_WIDTH
-        # h = MAZE_HEIGHT
+
         assert w & 1, "Width isn't odd!"
         assert h & 1, "Height isn't odd!"
         assert w >= 5 or h >= 5, "Maze too small!"
@@ -515,34 +549,49 @@ class GraphicsProgram3D:
                     pickup_pos = Point(pickup_x, pickup_y, pickup_z)
                     pickup = Trigger(pickup_pos, pickup_scale)
                     self.pickups.append(pickup)
-
         # Just to make sure levels are beatable
         # Generate one pickup at the player's starting position
-        start_pickup_pos = PLAYER_STARTING_POS
-        start_pickup = Trigger(start_pickup_pos, pickup_scale)
-        self.pickups.append(start_pickup)
+        # start_pickup_pos = self.player.position
+        # start_pickup = Trigger(start_pickup_pos, pickup_scale)
+        # self.pickups.append(start_pickup)
         # Goal setup
         # It's theoretically possible for the goal to end up inside a wall,
         # but it's unlikely.
-        goal_x = (w-2) * wall_scale
+        goal_x, goal_z = self.get_random_empty_maze_space(w, h)
+        goal_x *= wall_scale
         goal_y = 0
-        goal_z = (h-2) * wall_scale
+        goal_z *= wall_scale
         goal_scale = Point(MAZE_GOAL_SIZE, MAZE_GOAL_SIZE, MAZE_GOAL_SIZE)
         self.goal = Trigger(Point(goal_x, goal_y, goal_z), goal_scale)
+
+        if len(self.pickups) == 0:
+            self.go_to_exit_sound.play()
+
         if DEBUG_MODE:
+            print("There are {} pickups in the maze.".format(len(self.pickups)))
             print("Maze has been generated")
 
-    def setup_player(self):
+    def get_random_empty_maze_space(self, w, h):
+        x, z = randint(0, w-1), randint(0, h-1)
+        while self.maze.maze[x][z]:
+            x, z = randint(0, w-1), randint(0, h-1)
+        return x, z
+
+    def setup_player(self, maze_width, maze_height):
         """ Sets up the player """
-        self.player = Player(self.view_matrix.eye,
+        player_x, player_z = self.get_random_empty_maze_space(maze_width, maze_height)
+        player_y = PLAYER_RADIUS
+        player_pos = Point(player_x * MAZE_WALL_SIZE, player_y, player_z * MAZE_WALL_SIZE)
+        self.player = Player(player_pos,
                              Point(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_RADIUS))
 
     def new_game(self):
         """ Wrapper for all the setup functions """
+        self.setup_maze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_COMPLEXITY, MAZE_DENSITY)
+        self.setup_player(MAZE_WIDTH, MAZE_HEIGHT)
         self.setup_camera()
         self.setup_lights()
-        self.setup_maze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_COMPLEXITY, MAZE_DENSITY)
-        self.setup_player()
+
 
     def start(self):
         """ Starts a brand new game. Don't call this twice. """
