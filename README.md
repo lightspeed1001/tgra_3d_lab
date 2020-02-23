@@ -1,2 +1,3 @@
-# tgra_3d_lab
-Lab excercises for Computer Graphics.
+# 3D Lab Excercises
+
+Lab excercises for Computer Graphics at Reykjavik University.
